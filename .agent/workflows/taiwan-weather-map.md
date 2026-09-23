@@ -36,8 +36,10 @@ Select the appropriate dataset / table based on the required granularity and tim
 | Coverage / Granularity | Dataset ID (Table ID) | Dataset Name (資料集名稱) | Temperature Elements Included |
 | :--- | :--- | :--- | :--- |
 | **All Taiwan (22 Counties/Cities - 36 Hours)** | `F-C0032-001` | 一般天氣預報-今明相當天氣預報 | `MinT` (最低溫), `MaxT` (最高溫) |
+| **All Taiwan (360+ Stations - Real-Time Observation)** | `O-A0003-001` | 局屬氣象站-現在天氣觀測報告 | `AirTemperature`, `Weather`, `Precipitation`, `Humidity`, `WindSpeed` |
 | **All Taiwan (368 Townships - Future 2 Days / 3-Hourly)** | `F-D0047-091` | 鄉鎮天氣預報-台灣未來2天逐3小時天氣預報 | `T` (氣溫), `AT` (體感溫度), `MinT`, `MaxT` |
 | **All Taiwan (368 Townships - Future 1 Week)** | `F-D0047-089` | 鄉鎮天氣預報-台灣未來1週天氣預報 | `T` (氣溫), `AT` (體感溫度), `MinT`, `MaxT` |
+
 
 ## Step 3: Fetch Data & Initialize Database
 

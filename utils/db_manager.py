@@ -56,6 +56,31 @@ class DBManager:
                 );
             """)
 
+            # StationObservations schema (CWA O-A0003-001)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS StationObservations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    stationId TEXT NOT NULL,
+                    stationName TEXT NOT NULL,
+                    countyName TEXT NOT NULL,
+                    townName TEXT,
+                    lat REAL,
+                    lng REAL,
+                    altitude REAL,
+                    obsTime TEXT NOT NULL,
+                    weather TEXT,
+                    temp REAL,
+                    humidity REAL,
+                    pressure REAL,
+                    windSpeed REAL,
+                    windDirection REAL,
+                    precipitation REAL,
+                    uvIndex REAL,
+                    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(stationId, obsTime) ON CONFLICT REPLACE
+                );
+            """)
+
             conn.commit()
 
     def save_temperature_forecasts(self, records: List[Dict[str, Any]]) -> int:
@@ -119,3 +144,72 @@ class DBManager:
                 params=(region_name,)
             )
             return df
+
+    def save_station_observations(self, records: List[Dict[str, Any]]) -> int:
+        """Save/Upsert real-time station observation records into SQLite database."""
+        if not records:
+            return 0
+
+        sql = """
+            INSERT INTO StationObservations (
+                stationId, stationName, countyName, townName, lat, lng, altitude,
+                obsTime, weather, temp, humidity, pressure, windSpeed, windDirection,
+                precipitation, uvIndex
+            )
+            VALUES (
+                :stationId, :stationName, :countyName, :townName, :lat, :lng, :altitude,
+                :obsTime, :weather, :temp, :humidity, :pressure, :windSpeed, :windDirection,
+                :precipitation, :uvIndex
+            )
+            ON CONFLICT(stationId, obsTime) DO UPDATE SET
+                stationName = excluded.stationName,
+                countyName = excluded.countyName,
+                townName = excluded.townName,
+                lat = excluded.lat,
+                lng = excluded.lng,
+                altitude = excluded.altitude,
+                weather = excluded.weather,
+                temp = excluded.temp,
+                humidity = excluded.humidity,
+                pressure = excluded.pressure,
+                windSpeed = excluded.windSpeed,
+                windDirection = excluded.windDirection,
+                precipitation = excluded.precipitation,
+                uvIndex = excluded.uvIndex,
+                updatedAt = CURRENT_TIMESTAMP;
+        """
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.executemany(sql, records)
+            conn.commit()
+            return cursor.rowcount
+
+    def get_latest_station_observations(self) -> pd.DataFrame:
+        """Query latest weather observation for each station."""
+        sql = """
+            SELECT s.* FROM StationObservations s
+            INNER JOIN (
+                SELECT stationId, MAX(obsTime) AS maxObsTime
+                FROM StationObservations
+                GROUP BY stationId
+            ) latest ON s.stationId = latest.stationId AND s.obsTime = latest.maxObsTime
+            ORDER BY s.countyName, s.stationName
+        """
+        with self.get_connection() as conn:
+            return pd.read_sql_query(sql, conn)
+
+    def get_station_observations_by_county(self, county_name: str) -> pd.DataFrame:
+        """Query latest station observations for a specific county."""
+        sql = """
+            SELECT s.* FROM StationObservations s
+            INNER JOIN (
+                SELECT stationId, MAX(obsTime) AS maxObsTime
+                FROM StationObservations
+                WHERE countyName LIKE ?
+                GROUP BY stationId
+            ) latest ON s.stationId = latest.stationId AND s.obsTime = latest.maxObsTime
+            ORDER BY s.stationName
+        """
+        with self.get_connection() as conn:
+            return pd.read_sql_query(sql, conn, params=(f"%{county_name}%",))
+

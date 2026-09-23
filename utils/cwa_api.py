@@ -153,3 +153,94 @@ class CWAApiClient:
             print(f"[CWAApiClient] Error parsing township forecast data: {err}")
 
         return records
+
+    @staticmethod
+    def parse_station_observations(raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Parse 'O-A0003-001' (Real-time Station Weather Observations) dataset.
+
+        Returns:
+            List of dicts with station information, coordinates, and weather elements.
+        """
+        records = []
+        try:
+            stations = raw_data.get("records", {}).get("Station", [])
+            for st in stations:
+                station_id = st.get("StationId", "")
+                station_name = st.get("StationName", "")
+                obs_time = st.get("ObsTime", {}).get("DateTime", "")
+
+                geo_info = st.get("GeoInfo", {})
+                county_name = geo_info.get("CountyName", "")
+                town_name = geo_info.get("TownName", "")
+
+                # Coordinates - find WGS84 or default to first
+                coords = geo_info.get("Coordinates", [])
+                lat, lng = None, None
+                for c in coords:
+                    if c.get("CoordinateName") == "WGS84":
+                        try:
+                            lat = float(c.get("StationLatitude"))
+                            lng = float(c.get("StationLongitude"))
+                        except (ValueError, TypeError):
+                            pass
+                        break
+                if lat is None and coords:
+                    try:
+                        lat = float(coords[0].get("StationLatitude"))
+                        lng = float(coords[0].get("StationLongitude"))
+                    except (ValueError, TypeError):
+                        pass
+
+                altitude_val = None
+                try:
+                    alt_str = geo_info.get("StationAltitude")
+                    if alt_str is not None:
+                        altitude_val = float(alt_str)
+                except (ValueError, TypeError):
+                    pass
+
+                weather_elem = st.get("WeatherElement", {})
+                weather_desc = weather_elem.get("Weather", "")
+                if str(weather_desc).strip() in ["-99", "-99.0", "-999"]:
+                    weather_desc = "晴時多雲"
+
+                def _safe_float(val: Any) -> Optional[float]:
+                    try:
+                        if val is None:
+                            return None
+                        f = float(val)
+                        return None if f <= -90 else f
+                    except (ValueError, TypeError):
+                        return None
+
+                temp = _safe_float(weather_elem.get("AirTemperature"))
+                humidity = _safe_float(weather_elem.get("RelativeHumidity"))
+                pressure = _safe_float(weather_elem.get("AirPressure"))
+                wind_speed = _safe_float(weather_elem.get("WindSpeed"))
+                wind_direction = _safe_float(weather_elem.get("WindDirection"))
+                precipitation = _safe_float(weather_elem.get("Now", {}).get("Precipitation"))
+                uv_index = _safe_float(weather_elem.get("UVIndex"))
+
+                records.append({
+                    "stationId": station_id,
+                    "stationName": station_name,
+                    "countyName": county_name,
+                    "townName": town_name,
+                    "lat": lat,
+                    "lng": lng,
+                    "altitude": altitude_val,
+                    "obsTime": obs_time,
+                    "weather": weather_desc,
+                    "temp": temp,
+                    "humidity": humidity,
+                    "pressure": pressure,
+                    "windSpeed": wind_speed,
+                    "windDirection": wind_direction,
+                    "precipitation": precipitation,
+                    "uvIndex": uv_index
+                })
+        except Exception as err:
+            print(f"[CWAApiClient] Error parsing O-A0003-001 station observation data: {err}")
+
+        return records
+
