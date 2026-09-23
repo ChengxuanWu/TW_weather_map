@@ -21,9 +21,17 @@ class CWAApiClient:
             api_key: Optional CWA authorization key. If omitted, checks CWA_API_KEY env var,
                      or falls back to DEFAULT_API_KEY.
         """
+        st_key = None
+        try:
+            import streamlit as st
+            st_key = st.secrets.get("CWA_API_KEY")
+        except Exception:
+            pass
+
         self.api_key = (
             api_key
             or os.getenv("CWA_API_KEY")
+            or st_key
             or DEFAULT_API_KEY
         )
         self.base_url = BASE_URL
