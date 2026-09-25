@@ -11,6 +11,7 @@ import argparse
 import sys
 import pandas as pd
 from utils.cwa_api import CWAApiClient, DEFAULT_API_KEY
+from utils.moenv_api import MOENVApiClient
 from utils.db_manager import DBManager, DEFAULT_DB_PATH
 
 
@@ -92,6 +93,22 @@ def main():
                 print(f"[OK] Saved {saved_count} records in 'TownshipForecasts' database table.")
         except Exception as err:
             print(f"[Warning] Could not fetch township forecast F-D0047-091: {err}")
+
+    # 5. Fetch Real-time AQI Observations (AQX_P_432)
+    print("\n[Step 4] Fetching Real-Time AQI Observations (AQX_P_432)...")
+    try:
+        moenv_client = MOENVApiClient()
+        raw_aqi_data = moenv_client.fetch_dataset("aqx_p_432")
+        aqi_records = moenv_client.parse_aqi_observations(raw_aqi_data)
+        print(f"[OK] Successfully retrieved {len(aqi_records)} real-time AQI stations.")
+
+        if aqi_records:
+            saved_aqi = db_manager.save_aqi_observations(aqi_records)
+            print(f"[OK] Saved/Updated {saved_aqi} records in 'AQIObservations' database table.")
+        else:
+            print("[Warning] No valid AQI records found in response.")
+    except Exception as err:
+        print(f"[Warning] Could not fetch AQI observations AQX_P_432: {err}")
 
     # 5. Preview Database Summary
     print("\n--------------------------------------------------")

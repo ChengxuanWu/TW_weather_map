@@ -81,6 +81,39 @@ class DBManager:
                 );
             """)
 
+            # AQIObservations schema (MOENV AQX_P_432)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS AQIObservations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    siteid TEXT NOT NULL,
+                    sitename TEXT NOT NULL,
+                    county TEXT NOT NULL,
+                    aqi REAL,
+                    pollutant TEXT,
+                    status TEXT,
+                    so2 REAL,
+                    co REAL,
+                    o3 REAL,
+                    o3_8hr REAL,
+                    pm10 REAL,
+                    pm25 REAL,
+                    no2 REAL,
+                    nox REAL,
+                    no REAL,
+                    wind_speed REAL,
+                    wind_direc REAL,
+                    publishtime TEXT NOT NULL,
+                    co_8hr REAL,
+                    pm25_avg REAL,
+                    pm10_avg REAL,
+                    so2_avg REAL,
+                    longitude REAL,
+                    latitude REAL,
+                    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(siteid, publishtime) ON CONFLICT REPLACE
+                );
+            """)
+
             conn.commit()
 
     def save_temperature_forecasts(self, records: List[Dict[str, Any]]) -> int:
@@ -212,4 +245,67 @@ class DBManager:
         """
         with self.get_connection() as conn:
             return pd.read_sql_query(sql, conn, params=(f"%{county_name}%",))
+
+    def save_aqi_observations(self, records: List[Dict[str, Any]]) -> int:
+        """Save/Upsert real-time AQI observation records into SQLite database."""
+        if not records:
+            return 0
+
+        sql = """
+            INSERT INTO AQIObservations (
+                siteid, sitename, county, aqi, pollutant, status,
+                so2, co, o3, o3_8hr, pm10, pm25, no2, nox, no,
+                wind_speed, wind_direc, publishtime, co_8hr, pm25_avg,
+                pm10_avg, so2_avg, longitude, latitude
+            )
+            VALUES (
+                :siteid, :sitename, :county, :aqi, :pollutant, :status,
+                :so2, :co, :o3, :o3_8hr, :pm10, :pm25, :no2, :nox, :no,
+                :wind_speed, :wind_direc, :publishtime, :co_8hr, :pm25_avg,
+                :pm10_avg, :so2_avg, :longitude, :latitude
+            )
+            ON CONFLICT(siteid, publishtime) DO UPDATE SET
+                sitename = excluded.sitename,
+                county = excluded.county,
+                aqi = excluded.aqi,
+                pollutant = excluded.pollutant,
+                status = excluded.status,
+                so2 = excluded.so2,
+                co = excluded.co,
+                o3 = excluded.o3,
+                o3_8hr = excluded.o3_8hr,
+                pm10 = excluded.pm10,
+                pm25 = excluded.pm25,
+                no2 = excluded.no2,
+                nox = excluded.nox,
+                no = excluded.no,
+                wind_speed = excluded.wind_speed,
+                wind_direc = excluded.wind_direc,
+                co_8hr = excluded.co_8hr,
+                pm25_avg = excluded.pm25_avg,
+                pm10_avg = excluded.pm10_avg,
+                so2_avg = excluded.so2_avg,
+                longitude = excluded.longitude,
+                latitude = excluded.latitude,
+                updatedAt = CURRENT_TIMESTAMP;
+        """
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.executemany(sql, records)
+            conn.commit()
+            return cursor.rowcount
+
+    def get_latest_aqi_observations(self) -> pd.DataFrame:
+        """Query latest AQI observation for each station."""
+        sql = """
+            SELECT s.* FROM AQIObservations s
+            INNER JOIN (
+                SELECT siteid, MAX(publishtime) AS maxPublishTime
+                FROM AQIObservations
+                GROUP BY siteid
+            ) latest ON s.siteid = latest.siteid AND s.publishtime = latest.maxPublishTime
+            ORDER BY s.county, s.sitename
+        """
+        with self.get_connection() as conn:
+            return pd.read_sql_query(sql, conn)
 

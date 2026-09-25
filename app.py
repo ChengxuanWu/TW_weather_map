@@ -14,6 +14,7 @@ from folium import plugins
 from streamlit_folium import st_folium
 
 from utils.cwa_api import CWAApiClient
+from utils.moenv_api import MOENVApiClient
 from utils.db_manager import DBManager, DEFAULT_DB_PATH
 
 # -----------------------------------------------------------------------------
@@ -25,6 +26,12 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Handle pending states from map clicks before widgets render
+if "pending_macro" in st.session_state:
+    st.session_state["macro_sel"] = st.session_state.pop("pending_macro")
+if "pending_county" in st.session_state:
+    st.session_state["county_sel"] = st.session_state.pop("pending_county")
 
 # Custom Glassmorphic CSS Styling
 st.markdown("""
@@ -115,11 +122,66 @@ st.markdown("""
     .badge-purple { background-color: rgba(139, 92, 246, 0.2); color: #C084FC; border: 1px solid #8B5CF6; }
 
     /* Map container styling */
+    /* Full Viewport App */
+    .main .block-container {
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+    header { display: none !important; }
+
+    /* Move Sidebar to Right - Reverted, keep on left */
+    [data-testid="stSidebar"] {
+        background-color: rgba(15, 23, 42, 0.9) !important;
+        backdrop-filter: blur(10px) !important;
+        border-right: 1px solid rgba(255,255,255,0.1) !important;
+        z-index: 1000 !important;
+    }
+
+    /* Floating right panel (KPIs) */
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(> div > div > div > #left-panel-marker),
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(#left-panel-marker) {
+        position: absolute !important;
+        top: 2rem !important;
+        right: 2rem !important;
+        left: auto !important;
+        width: 360px !important;
+        z-index: 999 !important;
+        background-color: rgba(15, 23, 42, 0.85) !important;
+        backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    /* Floating Legend */
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(#legend-marker) {
+        position: absolute !important;
+        bottom: 3rem !important;
+        right: 2rem !important; /* bottom right corner */
+        z-index: 999 !important;
+        background-color: rgba(15, 23, 42, 0.85) !important;
+        border-radius: 12px;
+        padding: 1rem;
+    }
+    
+    /* Toggle Expander */
+    div[data-testid="stExpander"] {
+        position: absolute !important;
+        bottom: 2rem !important;
+        left: 22rem !important; /* avoid sidebar */
+        right: 24rem !important; /* avoid legend */
+        z-index: 999 !important;
+        width: auto !important;
+        max-height: 40vh !important;
+        overflow-y: auto !important;
+        background-color: rgba(15, 23, 42, 0.95) !important;
+    }
+
     .stFoliumContainer {
-        border-radius: 14px;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        border-radius: 0;
+        height: 100vh !important;
+        width: 100vw !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -228,6 +290,24 @@ def get_precipitation_color(precip: float) -> str:
         return "#EF4444"   # Red (>40 mm Heavy rain)
 
 
+def get_aqi_color(aqi_val: float) -> str:
+    """Return color hex matching AQI scales."""
+    if pd.isna(aqi_val) or aqi_val is None:
+        return "#94A3B8"
+    if aqi_val <= 50:
+        return "#10B981"   # Green (Good)
+    elif aqi_val <= 100:
+        return "#F59E0B"   # Yellow/Amber (Moderate)
+    elif aqi_val <= 150:
+        return "#F97316"   # Orange (Unhealthy for Sensitive)
+    elif aqi_val <= 200:
+        return "#EF4444"   # Red (Unhealthy)
+    elif aqi_val <= 300:
+        return "#8B5CF6"   # Purple (Very Unhealthy)
+    else:
+        return "#7F1D1D"   # Maroon (Hazardous)
+
+
 # -----------------------------------------------------------------------------
 # 3. Data Ingestion & Caching Functions
 # -----------------------------------------------------------------------------
@@ -258,6 +338,17 @@ def load_station_data() -> pd.DataFrame:
     return df
 
 
+@st.cache_data(ttl=300)
+def load_aqi_data() -> pd.DataFrame:
+    """Load real-time AQI observation records from SQLite database."""
+    db = DBManager(db_path=DEFAULT_DB_PATH)
+    df = db.get_latest_aqi_observations()
+    if not df.empty:
+        df["aqi"] = pd.to_numeric(df["aqi"], errors="coerce")
+        df["pm25"] = pd.to_numeric(df["pm25"], errors="coerce")
+    return df
+
+
 def trigger_api_sync() -> bool:
     """Trigger real-time fetch from CWA API for both F-C0032-001 and O-A0003-001."""
     try:
@@ -276,10 +367,17 @@ def trigger_api_sync() -> bool:
         if station_records:
             db.save_station_observations(station_records)
 
+        # 3. Fetch Real-time AQI Observations (AQX_P_432)
+        moenv_client = MOENVApiClient()
+        raw_aqi = moenv_client.fetch_dataset("aqx_p_432")
+        aqi_records = moenv_client.parse_aqi_observations(raw_aqi)
+        if aqi_records:
+            db.save_aqi_observations(aqi_records)
+
         st.cache_data.clear()
         return True
     except Exception as err:
-        st.error(f"同步中央氣象署 API 資料失敗: {err}")
+        st.error(f"同步資料失敗: {err}")
         return False
 
 
@@ -300,8 +398,9 @@ if not os.path.exists(DEFAULT_DB_PATH):
 
 df_weather = load_weather_data()
 df_stations = load_station_data()
+df_aqi = load_aqi_data()
 
-if df_weather.empty and df_stations.empty:
+if df_weather.empty and df_stations.empty and df_aqi.empty:
     st.warning("⚠️ 目前資料庫中無氣象資料，請點擊下方按鈕以連線中央氣象署獲取最新預報。")
     if st.button("🔄 立即同步中央氣象署資料", type="primary"):
         with st.spinner("連線 CWA API 下載中..."):
@@ -315,18 +414,18 @@ if df_weather.empty and df_stations.empty:
 # -----------------------------------------------------------------------------
 st.sidebar.markdown("### 🎛️ 資料與地圖控制")
 
-# View Mode: County Forecast vs. Live Station Observations
+# View Mode: County Forecast vs. Live Station Observations vs AQI
 data_view_mode = st.sidebar.radio(
     "📊 地圖資料來源 (Data Source Layer)",
-    options=["縣市 36h 天氣預報 (F-C0032-001)", "全台 360+ 測站即時觀測 (O-A0003-001)"],
-    index=0
+    options=["縣市 36h 天氣預報 (F-C0032-001)", "全台 360+ 測站即時觀測 (O-A0003-001)", "全台空氣品質即時觀測 (AQX_P_432)"],
+    index=1
 )
 
 # Macro Region Selector
 selected_macro = st.sidebar.selectbox(
     "📍 選擇分區 (Region Group)",
     options=list(REGION_GROUPS.keys()),
-    index=0
+    key="macro_sel"
 )
 
 # County Focus Filter
@@ -334,7 +433,7 @@ available_counties = REGION_GROUPS[selected_macro]
 selected_county = st.sidebar.selectbox(
     "🏙️ 聚焦縣市 (Focus County/City)",
     options=["全部顯示"] + available_counties,
-    index=0
+    key="county_sel"
 )
 
 # Date / Time Period Selector (Only for Forecast Mode)
@@ -372,7 +471,13 @@ if st.sidebar.button("🔄 同步氣象署最新資料 (全部)", use_container_
 # -----------------------------------------------------------------------------
 # 6. KPI Metric Cards
 # -----------------------------------------------------------------------------
-col1, col2, col3, col4 = st.columns(4)
+with st.container(border=True):
+    st.markdown('<div id="left-panel-marker"></div>', unsafe_allow_html=True)
+    st.markdown("### 🇹🇼 台灣即時氣象")
+    
+    col1, col2 = st.columns(2)
+    col3, col4 = st.columns(2)
+
 
 if data_view_mode.startswith("縣市"):
     df_slot = df_weather[df_weather["dataDate"] == selected_date] if selected_date else df_weather
@@ -417,7 +522,7 @@ if data_view_mode.startswith("縣市"):
                 <div class="metric-sub">綜合預報平均降雨率</div>
             </div>
             """, unsafe_allow_html=True)
-else:
+elif data_view_mode.startswith("全台 360+"):
     # KPI from live station observations (O-A0003-001)
     if not df_stations.empty:
         valid_temp = df_stations.dropna(subset=["temp"])
@@ -461,64 +566,125 @@ else:
                 <div class="metric-sub">{wettest_st['stationName'] if wettest_st is not None else ''} ({wettest_st['countyName'] if wettest_st is not None else ''})</div>
             </div>
             """, unsafe_allow_html=True)
+elif data_view_mode.startswith("全台空氣品質"):
+    if not df_aqi.empty:
+        valid_aqi = df_aqi.dropna(subset=["aqi"])
+        worst_aqi_st = valid_aqi.loc[valid_aqi["aqi"].idxmax()] if not valid_aqi.empty else None
+        avg_aqi = valid_aqi["aqi"].mean() if not valid_aqi.empty else 0.0
+        good_aqi_count = (valid_aqi["aqi"] <= 50).sum() if not valid_aqi.empty else 0
 
-st.markdown("<div style='height: 1.2rem;'></div>", unsafe_allow_html=True)
+        with col1:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-title">😷 全台最高 AQI</div>
+                <div class="metric-value">{worst_aqi_st['aqi'] if worst_aqi_st is not None else '--'}</div>
+                <div class="metric-sub">{worst_aqi_st['sitename'] if worst_aqi_st is not None else ''} ({worst_aqi_st['county'] if worst_aqi_st is not None else ''})</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col2:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-title">指標污染物</div>
+                <div class="metric-value">{worst_aqi_st['pollutant'] if worst_aqi_st is not None and worst_aqi_st['pollutant'] else '無'}</div>
+                <div class="metric-sub">{worst_aqi_st['sitename'] if worst_aqi_st is not None else ''} 最高污染</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col3:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-title">🌿 全台平均 AQI</div>
+                <div class="metric-value">{avg_aqi:.1f}</div>
+                <div class="metric-sub">{len(valid_aqi)} 個有效空品測站</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col4:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-title">🍃 良好測站比例</div>
+                <div class="metric-value">{good_aqi_count}/{len(valid_aqi)}</div>
+                <div class="metric-sub">AQI ≤ 50 測站數量</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+
 
 # -----------------------------------------------------------------------------
 # 7. Interactive Layout: Folium Map (Left) + Temperature Analytics (Right)
 # -----------------------------------------------------------------------------
-map_col, chart_col = st.columns([1.2, 1], gap="medium")
+# Full width map container
 
-with map_col:
-    st.markdown("### 🗺️ 台灣互動天氣地圖 (Interactive Map)")
-
-    # -------------------------------------------------------------------------
-    # Display Mode Switcher (Buttons for Temperature, Forecast Weather, Rainy)
-    # -------------------------------------------------------------------------
-    display_mode = st.radio(
-        "🎯 地圖指標切換 (Switch Map Indicator)：",
-        options=["🌡️ 氣溫 (Temperature)", "☁️ 天氣現象 (Weather)", "💧 降雨指標 (Rain / PoP)"],
-        horizontal=True,
-        index=0
-    )
-
-    # Dynamic Legend Banner matching display mode
-    if display_mode.startswith("🌡️ 氣溫"):
-        st.markdown("""
-        <div style="font-size:0.82rem; margin-bottom: 0.6rem;">
-            <b>氣溫色階：</b>
-            <span class="badge-pill badge-blue">&lt; 20°C 寒冷/涼爽</span>
-            <span class="badge-pill badge-green">20 ~ 25°C 舒適宜人</span>
-            <span class="badge-pill badge-yellow">25 ~ 30°C 溫暖微熱</span>
-            <span class="badge-pill badge-red">&gt; 30°C 炎熱高溫</span>
-        </div>
-        """, unsafe_allow_html=True)
-    elif display_mode.startswith("☁️ 天氣"):
-        st.markdown("""
-        <div style="font-size:0.82rem; margin-bottom: 0.6rem;">
-            <b>天氣現象標籤：</b>
-            <span class="badge-pill badge-yellow">☀️ 晴朗</span>
-            <span class="badge-pill badge-blue">⛅ 多雲</span>
-            <span class="badge-pill badge-green">☁️ 陰天</span>
-            <span class="badge-pill badge-blue">🌧️ 降雨/陣雨</span>
-            <span class="badge-pill badge-purple">⛈️ 雷雨</span>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-        <div style="font-size:0.82rem; margin-bottom: 0.6rem;">
-            <b>降雨指標色階：</b>
-            <span class="badge-pill badge-green">&lt; 20% / 0mm 乾爽舒適</span>
-            <span class="badge-pill badge-yellow">20 ~ 50% / &lt;5mm 局部有雨</span>
-            <span class="badge-pill badge-blue">50 ~ 80% / 5~15mm 降雨顯著</span>
-            <span class="badge-pill badge-purple">&gt; 80% / &gt;15mm 慎防大雨</span>
-        </div>
-        """, unsafe_allow_html=True)
-
+with st.container():
+    with st.container(border=True):
+        st.markdown('<div id="legend-marker"></div>', unsafe_allow_html=True)
+        # -------------------------------------------------------------------------
+        # Display Mode Switcher (Buttons for Temperature, Forecast Weather, Rainy)
+        # -------------------------------------------------------------------------
+        if data_view_mode.startswith("全台空氣品質"):
+            display_mode = st.radio(
+                "🎯 地圖指標切換 (Switch Map Indicator)：",
+                options=["🍃 空氣品質 (AQI)"],
+                horizontal=True,
+                index=0
+            )
+        else:
+            display_mode = st.radio(
+                "🎯 地圖指標切換 (Switch Map Indicator)：",
+                options=["🌡️ 氣溫 (Temperature)", "☁️ 天氣現象 (Weather)", "💧 降雨指標 (Rain / PoP)"],
+                horizontal=True,
+                index=0
+            )
+    
+        # Dynamic Legend Banner matching display mode
+        if display_mode.startswith("🌡️ 氣溫"):
+            st.markdown("""
+            <div style="font-size:0.82rem; margin-bottom: 0.6rem;">
+                <b>氣溫色階：</b>
+                <span class="badge-pill badge-blue">&lt; 20°C 寒冷/涼爽</span>
+                <span class="badge-pill badge-green">20 ~ 25°C 舒適宜人</span>
+                <span class="badge-pill badge-yellow">25 ~ 30°C 溫暖微熱</span>
+                <span class="badge-pill badge-red">&gt; 30°C 炎熱高溫</span>
+            </div>
+            """, unsafe_allow_html=True)
+        elif display_mode.startswith("☁️ 天氣"):
+            st.markdown("""
+            <div style="font-size:0.82rem; margin-bottom: 0.6rem;">
+                <b>天氣現象標籤：</b>
+                <span class="badge-pill badge-yellow">☀️ 晴朗</span>
+                <span class="badge-pill badge-blue">⛅ 多雲</span>
+                <span class="badge-pill badge-green">☁️ 陰天</span>
+                <span class="badge-pill badge-blue">🌧️ 降雨/陣雨</span>
+                <span class="badge-pill badge-purple">⛈️ 雷雨</span>
+            </div>
+            """, unsafe_allow_html=True)
+        elif display_mode.startswith("🍃 空氣品質"):
+            st.markdown("""
+            <div style="font-size:0.82rem; margin-bottom: 0.6rem;">
+                <b>空氣品質 (AQI) 色階：</b>
+                <span class="badge-pill badge-green">≤ 50 良好</span>
+                <span class="badge-pill badge-yellow">51 ~ 100 普通</span>
+                <span class="badge-pill" style="background-color: rgba(249, 115, 22, 0.2); color: #F97316; border: 1px solid #F97316;">101 ~ 150 敏感族群不良</span>
+                <span class="badge-pill badge-red">151 ~ 200 對所有族群不良</span>
+                <span class="badge-pill badge-purple">> 200 非常不健康/危害</span>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div style="font-size:0.82rem; margin-bottom: 0.6rem;">
+                <b>降雨指標色階：</b>
+                <span class="badge-pill badge-green">&lt; 20% / 0mm 乾爽舒適</span>
+                <span class="badge-pill badge-yellow">20 ~ 50% / &lt;5mm 局部有雨</span>
+                <span class="badge-pill badge-blue">50 ~ 80% / 5~15mm 降雨顯著</span>
+                <span class="badge-pill badge-purple">&gt; 80% / &gt;15mm 慎防大雨</span>
+            </div>
+            """, unsafe_allow_html=True)
+    
     # Center map on Taiwan or focused county
     if selected_county != "全部顯示" and selected_county in TAIWAN_LOCATIONS:
         map_center = [TAIWAN_LOCATIONS[selected_county]["lat"], TAIWAN_LOCATIONS[selected_county]["lng"]]
-        zoom_level = 9
+        zoom_level = 10
     elif selected_macro != "全台灣 (All)":
         macro_coords = [TAIWAN_LOCATIONS[c] for c in available_counties if c in TAIWAN_LOCATIONS]
         map_center = [
@@ -531,13 +697,19 @@ with map_col:
         zoom_level = 7
 
     tw_map = folium.Map(
-        location=map_center,
-        zoom_start=zoom_level,
-        tiles="CartoDB positron",
+        location=[23.7, 120.9],
+        zoom_start=7,
+        min_zoom=7,
+        max_bounds=True,
+        min_lat=20.5,
+        max_lat=26.5,
+        min_lon=117.5,
+        max_lon=123.5,
+        tiles="OpenStreetMap",
         control_scale=True,
+        prefer_canvas=True,
     )
-    folium.TileLayer("OpenStreetMap", name="OpenStreetMap").add_to(tw_map)
-    folium.TileLayer("CartoDB dark_matter", name="Dark Matter (暗色夜覽)").add_to(tw_map)
+    plugins.Fullscreen(position='topleft', title='全螢幕', titleCancel='退出全螢幕').add_to(tw_map)
 
     # -------------------------------------------------------------------------
     # Render Markers: County Forecast vs Live Station Observation
@@ -547,11 +719,6 @@ with map_col:
         for _, row in df_slot.iterrows():
             county = row["regionName"]
             if county not in TAIWAN_LOCATIONS:
-                continue
-
-            if selected_county != "全部顯示" and county != selected_county:
-                continue
-            elif selected_county == "全部顯示" and county not in available_counties:
                 continue
 
             coords = TAIWAN_LOCATIONS[county]
@@ -615,13 +782,10 @@ with map_col:
                 )
             ).add_to(tw_map)
 
-    else:
+    elif data_view_mode.startswith("全台 360+"):
         # Plot 360+ Real-Time Stations (O-A0003-001)
         st_view = df_stations.dropna(subset=["lat", "lng"]).copy()
-        if selected_macro != "全台灣 (All)":
-            st_view = st_view[st_view["countyName"].isin(available_counties)]
-        if selected_county != "全部顯示":
-            st_view = st_view[st_view["countyName"].str.contains(selected_county, na=False)]
+        marker_cluster = plugins.MarkerCluster(name="測站叢集").add_to(tw_map)
 
         for _, row in st_view.iterrows():
             st_name = row["stationName"]
@@ -671,7 +835,7 @@ with map_col:
                 fill_opacity=0.75,
                 tooltip=f"{st_name} ({st_county}): {st_temp}°C ｜ {st_wx} ｜ 💧{st_precip}mm",
                 popup=folium.Popup(popup_html, max_width=280)
-            ).add_to(tw_map)
+            ).add_to(marker_cluster)
 
             folium.Marker(
                 location=[row["lat"], row["lng"]],
@@ -684,12 +848,104 @@ with map_col:
                     </div>
                     """
                 )
-            ).add_to(tw_map)
+            ).add_to(marker_cluster)
+
+    elif data_view_mode.startswith("全台空氣品質"):
+        # Plot Real-Time AQI Observations (AQX_P_432)
+        aqi_view = df_aqi.dropna(subset=["latitude", "longitude"]).copy()
+        marker_cluster = plugins.MarkerCluster(name="空品測站叢集").add_to(tw_map)
+
+        for _, row in aqi_view.iterrows():
+            marker_color = get_aqi_color(row["aqi"])
+            icon_text = f"{int(row['aqi'])}" if pd.notna(row['aqi']) else "--"
+            
+            popup_html = f"""
+            <div style="font-family: 'Noto Sans TC', sans-serif; min-width: 180px; padding: 4px;">
+                <h4 style="margin: 0 0 4px 0; color: #1E293B; border-bottom: 2px solid {marker_color};">
+                    {row['sitename']} ({row['county']})
+                </h4>
+                <div style="font-size: 12px; color: #475569; line-height: 1.6;">
+                    <div><b>空氣品質 (AQI)：</b> <span style="font-weight:bold; color:{marker_color};">{row['aqi']}</span> ({row['status']})</div>
+                    <div><b>主要污染物：</b> {row['pollutant'] if row['pollutant'] else '無'}</div>
+                    <div><b>PM2.5：</b> {row['pm25']} μg/m3</div>
+                    <div><b>PM10：</b> {row['pm10']} μg/m3</div>
+                </div>
+            </div>
+            """
+
+            folium.CircleMarker(
+                location=[row["latitude"], row["longitude"]],
+                radius=11,
+                color=marker_color,
+                weight=2,
+                fill=True,
+                fill_color=marker_color,
+                fill_opacity=0.75,
+                tooltip=f"{row['sitename']}: AQI {row['aqi']} ({row['status']})",
+                popup=folium.Popup(popup_html, max_width=280)
+            ).add_to(marker_cluster)
+
+            folium.Marker(
+                location=[row["latitude"], row["longitude"]],
+                icon=folium.DivIcon(
+                    icon_size=(40, 18),
+                    icon_anchor=(20, 9),
+                    html=f"""
+                    <div style="font-size: 9px; font-weight: 700; color: #ffffff; text-align: center; text-shadow: 0px 1px 3px rgba(0,0,0,0.9); pointer-events: none;">
+                        {icon_text}
+                    </div>
+                    """
+                )
+            ).add_to(marker_cluster)
+
+    import json
+    try:
+        with open("taiwan_counties.json", "r", encoding="utf-8") as f:
+            geojson_data = json.load(f)
+        
+        folium.GeoJson(
+            geojson_data,
+            name="台灣縣市邊界",
+            style_function=lambda feature: {
+                'fillColor': '#ffffff',
+                'color': '#333333',
+                'weight': 1,
+                'fillOpacity': 0.05
+            },
+            highlight_function=lambda feature: {
+                'fillColor': '#3b82f6',
+                'color': '#3b82f6',
+                'weight': 2,
+                'fillOpacity': 0.4
+            },
+            tooltip=folium.GeoJsonTooltip(
+                fields=['COUNTYNAME'],
+                aliases=[''],
+                labels=False,
+                style="background-color: white !important; color: #333333 !important; font-family: arial; font-size: 14px; padding: 6px 10px; border: none !important; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.15) !important;"
+            )
+        ).add_to(tw_map)
+    except Exception as e:
+        pass
 
     folium.LayerControl(position="topright").add_to(tw_map)
-    st_folium(tw_map, width=None, height=530, use_container_width=True)
+    st_data = st_folium(tw_map, width=None, height=750, use_container_width=True, center=map_center, zoom=zoom_level, returned_objects=["last_active_drawing"])
+    
+    if st_data and st_data.get("last_active_drawing"):
+        clicked_county = st_data["last_active_drawing"]["properties"].get("COUNTYNAME")
+        if clicked_county:
+            clicked_macro = "全台灣 (All)"
+            for m, c_list in REGION_GROUPS.items():
+                if m != "全台灣 (All)" and clicked_county in c_list:
+                    clicked_macro = m
+                    break
+            
+            if st.session_state.get("macro_sel") != clicked_macro or st.session_state.get("county_sel") != clicked_county:
+                st.session_state["pending_macro"] = clicked_macro
+                st.session_state["pending_county"] = clicked_county
+                st.rerun()
 
-with chart_col:
+with st.expander("📊 顯示詳細數據分析與資料表 (View Analytics & Data Tables)", expanded=False):
     st.markdown("### 📈 數據分析與趨勢視覺化 (Trend Analytics)")
 
     if data_view_mode.startswith("縣市"):
@@ -727,7 +983,7 @@ with chart_col:
                         <div style="font-size: 0.75rem; color: #60A5FA; margin-top: 2px;">💧 {row.get('pop', '0')}%</div>
                     </div>
                     """, unsafe_allow_html=True)
-    else:
+    elif data_view_mode.startswith("全台 360+"):
         # Station analytics (O-A0003-001)
         st_view = df_stations.copy()
         if selected_macro != "全台灣 (All)":
@@ -746,92 +1002,149 @@ with chart_col:
 
         st.markdown(f"**當前分區測站數量：** `{len(st_view)}` 站 ｜ **降雨測站數：** `{(st_view['precipitation'] > 0).sum()}` 站")
 
+    elif data_view_mode.startswith("全台空氣品質"):
+        aqi_view = df_aqi.copy()
+        if selected_macro != "全台灣 (All)":
+            aqi_view = aqi_view[aqi_view["county"].isin(available_counties)]
+        if selected_county != "全部顯示":
+            aqi_view = aqi_view[aqi_view["county"].str.contains(selected_county, na=False)]
+
+        st.markdown(f"**{selected_macro} 空氣品質最差前 10 排行榜：**")
+        top_aqi = aqi_view.dropna(subset=["aqi"]).sort_values("aqi", ascending=False).head(10)
+        if not top_aqi.empty:
+            chart_data = top_aqi[["sitename", "aqi"]].set_index("sitename")
+            chart_data.columns = ["AQI 指數"]
+            st.bar_chart(chart_data, color="#F59E0B", height=270)
+        else:
+            st.info("所選分區目前尚無有效空品測站回傳。")
+
+        st.markdown(f"**當前分區空品測站數量：** `{len(aqi_view)}` 站")
+
 # -----------------------------------------------------------------------------
-# 8. Full Data Tables & CSV Download (Tabs)
-# -----------------------------------------------------------------------------
-st.markdown("---")
-st.markdown("### 📋 氣象數據庫總覽與查詢 (Data Explorer)")
+    # 8. Full Data Tables & CSV Download (Tabs)
+    # -----------------------------------------------------------------------------
+    st.markdown("---")
+    st.markdown("### 📋 氣象數據庫總覽與查詢 (Data Explorer)")
 
-tab1, tab2, tab3 = st.tabs([
-    "📊 縣市 36h 預報總覽 (F-C0032-001)",
-    "📡 全台 360+ 測站即時觀測 (O-A0003-001)",
-    "📥 數據資料匯出 (Export CSV)"
-])
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "📊 縣市 36h 預報總覽 (F-C0032-001)",
+        "📡 全台 360+ 測站即時觀測 (O-A0003-001)",
+        "🍃 全台空氣品質即時觀測 (AQX_P_432)",
+        "📥 數據資料匯出 (Export CSV)"
+    ])
 
-with tab1:
-    view_df = df_weather.copy()
-    if selected_macro != "全台灣 (All)":
-        view_df = view_df[view_df["regionName"].isin(available_counties)]
-    if selected_county != "全部顯示":
-        view_df = view_df[view_df["regionName"] == selected_county]
+    with tab1:
+        view_df = df_weather.copy()
+        if selected_macro != "全台灣 (All)":
+            view_df = view_df[view_df["regionName"].isin(available_counties)]
+        if selected_county != "全部顯示":
+            view_df = view_df[view_df["regionName"] == selected_county]
 
-    display_table = view_df[["regionName", "dataDate", "minT", "maxT", "wx", "pop", "updatedAt"]].copy()
-    display_table.columns = ["縣市名稱", "預報時段", "最低溫 (°C)", "最高溫 (°C)", "天氣現象", "降雨機率 (%)", "更新時間"]
-    display_table = display_table.sort_values(by=["預報時段", "縣市名稱"])
+        display_table = view_df[["regionName", "dataDate", "minT", "maxT", "wx", "pop", "updatedAt"]].copy()
+        display_table.columns = ["縣市名稱", "預報時段", "最低溫 (°C)", "最高溫 (°C)", "天氣現象", "降雨機率 (%)", "更新時間"]
+        display_table = display_table.sort_values(by=["預報時段", "縣市名稱"])
 
-    st.dataframe(
-        display_table,
-        use_container_width=True,
-        hide_index=True,
-        height=320
-    )
+        st.dataframe(
+            display_table,
+            use_container_width=True,
+            hide_index=True,
+            height=320
+        )
 
-with tab2:
-    st_table = df_stations.copy()
-    if selected_macro != "全台灣 (All)":
-        st_table = st_table[st_table["countyName"].isin(available_counties)]
-    if selected_county != "全部顯示":
-        st_table = st_table[st_table["countyName"].str.contains(selected_county, na=False)]
+    with tab2:
+        st_table = df_stations.copy()
+        if selected_macro != "全台灣 (All)":
+            st_table = st_table[st_table["countyName"].isin(available_counties)]
+        if selected_county != "全部顯示":
+            st_table = st_table[st_table["countyName"].str.contains(selected_county, na=False)]
 
-    search_station = st.text_input("🔍 搜尋測站名稱或鄉鎮：", placeholder="輸入測站名稱例如：基隆、板橋、玉山...")
-    if search_station:
-        st_table = st_table[
-            st_table["stationName"].str.contains(search_station, na=False) |
-            st_table["townName"].str.contains(search_station, na=False)
+        search_station = st.text_input("🔍 搜尋測站名稱或鄉鎮：", placeholder="輸入測站名稱例如：基隆、板橋、玉山...")
+        if search_station:
+            st_table = st_table[
+                st_table["stationName"].str.contains(search_station, na=False) |
+                st_table["townName"].str.contains(search_station, na=False)
+            ]
+
+        st_display = st_table[[
+            "stationId", "stationName", "countyName", "townName",
+            "weather", "temp", "humidity", "precipitation", "windSpeed", "pressure", "obsTime"
+        ]].copy()
+        st_display.columns = [
+            "測站代碼", "測站名稱", "所屬縣市", "鄉鎮區",
+            "即時天氣", "氣溫 (°C)", "相對濕度 (%)", "當前降水 (mm)", "風速 (m/s)", "氣壓 (hPa)", "觀測時間"
         ]
-
-    st_display = st_table[[
-        "stationId", "stationName", "countyName", "townName",
-        "weather", "temp", "humidity", "precipitation", "windSpeed", "pressure", "obsTime"
-    ]].copy()
-    st_display.columns = [
-        "測站代碼", "測站名稱", "所屬縣市", "鄉鎮區",
-        "即時天氣", "氣溫 (°C)", "相對濕度 (%)", "當前降水 (mm)", "風速 (m/s)", "氣壓 (hPa)", "觀測時間"
-    ]
-    st.dataframe(
-        st_display.sort_values("氣溫 (°C)", ascending=False),
-        use_container_width=True,
-        hide_index=True,
-        height=320
-    )
-
-with tab3:
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("**下載縣市 36 小時預報數據 (F-C0032-001)**")
-        csv_fc = display_table.to_csv(index=False).encode("utf-8-sig")
-        st.download_button(
-            label="📥 下載預報資料 CSV",
-            data=csv_fc,
-            file_name=f"taiwan_forecast_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
-            mime="text/csv",
-            type="primary"
-        )
-    with c2:
-        st.markdown("**下載測站即時觀測數據 (O-A0003-001)**")
-        csv_st = df_stations.to_csv(index=False).encode("utf-8-sig")
-        st.download_button(
-            label="📥 下載 360+ 測站資料 CSV",
-            data=csv_st,
-            file_name=f"taiwan_station_obs_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
-            mime="text/csv"
+        st.dataframe(
+            st_display.sort_values("氣溫 (°C)", ascending=False),
+            use_container_width=True,
+            hide_index=True,
+            height=320
         )
 
-# -----------------------------------------------------------------------------
+    with tab3:
+        aqi_table = df_aqi.copy()
+        if selected_macro != "全台灣 (All)":
+            aqi_table = aqi_table[aqi_table["county"].isin(available_counties)]
+        if selected_county != "全部顯示":
+            aqi_table = aqi_table[aqi_table["county"].str.contains(selected_county, na=False)]
+
+        search_aqi = st.text_input("🔍 搜尋空品測站名稱或鄉鎮：", placeholder="輸入測站名稱例如：古亭、汐止...")
+        if search_aqi:
+            aqi_table = aqi_table[
+                aqi_table["sitename"].str.contains(search_aqi, na=False) |
+                aqi_table["county"].str.contains(search_aqi, na=False)
+            ]
+
+        aqi_display = aqi_table[[
+            "siteid", "sitename", "county", "aqi",
+            "pollutant", "status", "pm25", "pm10", "o3", "publishtime"
+        ]].copy()
+        aqi_display.columns = [
+            "測站代碼", "測站名稱", "所屬縣市", "空氣品質 (AQI)",
+            "主要污染物", "狀態", "PM2.5 (μg/m3)", "PM10 (μg/m3)", "臭氧 O3 (ppb)", "發布時間"
+        ]
+        st.dataframe(
+            aqi_display.sort_values("空氣品質 (AQI)", ascending=False),
+            use_container_width=True,
+            hide_index=True,
+            height=320
+        )
+
+    with tab4:
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown("**下載縣市 36 小時預報數據 (F-C0032-001)**")
+            csv_fc = display_table.to_csv(index=False).encode("utf-8-sig")
+            st.download_button(
+                label="📥 下載預報資料 CSV",
+                data=csv_fc,
+                file_name=f"taiwan_forecast_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv",
+                type="primary"
+            )
+        with c2:
+            st.markdown("**下載測站即時觀測數據 (O-A0003-001)**")
+            csv_st = df_stations.to_csv(index=False).encode("utf-8-sig")
+            st.download_button(
+                label="📥 下載 360+ 測站資料 CSV",
+                data=csv_st,
+                file_name=f"taiwan_station_obs_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv"
+            )
+        with c3:
+            st.markdown("**下載全台空氣品質數據 (AQX_P_432)**")
+            csv_aqi = df_aqi.to_csv(index=False).encode("utf-8-sig")
+            st.download_button(
+                label="📥 下載 AQI 空品資料 CSV",
+                data=csv_aqi,
+                file_name=f"taiwan_aqi_obs_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv"
+            )
+
+    # -----------------------------------------------------------------------------
 # 9. Footer
 # -----------------------------------------------------------------------------
 st.markdown("""
 <div style="text-align: center; margin-top: 3rem; padding: 1.5rem 0; border-top: 1px solid rgba(255,255,255,0.08); color: #64748B; font-size: 0.85rem;">
-    Taiwan Weather Map Dashboard ｜ Powered by <b>CWA Open Data (交通部中央氣象署 F-C0032-001 & O-A0003-001)</b> ｜ Built with Streamlit & Folium
+    Taiwan Weather Map Dashboard ｜ Powered by <b>CWA Open Data & MOENV Open Data</b> ｜ Built with Streamlit & Folium
 </div>
 """, unsafe_allow_html=True)
