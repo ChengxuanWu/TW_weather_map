@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣氣象與即時觀測儀表板 | Taiwan Weather Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="/static/style.css?v=26">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;800&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="map"></div>
+    
+    <!-- Summary Panel (Middle Right) -->
+    <div id="summary-panel" class="glass-panel">
+        <div class="summary-title" id="summary-title">🌍 全台即時摘要</div>
+        <div id="summary-content">
+            <!-- Populated by JS -->
+        </div>
+        <button id="summary-reset-btn" class="summary-reset-btn" style="display:none;">🔙 返回全台摘要</button>
+    </div>
+    
+    <!-- Region Details Panel -->
+    <div id="region-panel" class="glass-panel">
+        <div class="panel-header">
+            <h3>📈 區域詳細預報與數據</h3>
+            <button id="toggle-panel-btn">▼</button>
+        </div>
+        <div id="panel-content">
+            <div class="control-group">
+                <label>📍 選擇地區 / 縣市</label>
+                <select id="region-select">
+                    <!-- Populated by JS -->
+                </select>
+            </div>
+            
+            <!-- Chart Container -->
+            <div class="chart-container">
+                <canvas id="tempChart"></canvas>
+            </div>
+            
+            <!-- Data Table Container -->
+            <div class="table-container">
+                <table id="data-table">
+                    <thead>
+                        <tr>
+                            <th>時間 (Date)</th>
+                            <th>最低溫 (MinT)</th>
+                            <th>最高溫 (MaxT)</th>
+                            <th>降雨機率</th>
+                        </tr>
+                    </thead>
+                    <tbody id="data-table-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/app.js?v=26"></script>
+</body>
+</html>

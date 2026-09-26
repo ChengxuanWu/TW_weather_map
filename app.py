@@ -36,153 +36,219 @@ if "pending_county" in st.session_state:
 # Custom Glassmorphic CSS Styling
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Inter:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;800&family=Inter:wght@400;600;700;800&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
-    /* Header Gradient & Badge */
-    .main-title-container {
-        padding: 1.2rem 1.5rem;
-        background: linear-gradient(135deg, rgba(30, 58, 138, 0.88) 0%, rgba(15, 23, 42, 0.95) 100%);
-        border-radius: 16px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        margin-bottom: 1.5rem;
-        color: #ffffff;
+    /* Concept 2 & 3: Constrain max width for readability, RWD native in Streamlit */
+    .main .block-container {
+        padding: 0 !important;
+        max-width: 1400px !important;
+        margin: 0 auto;
+        padding-top: 3rem !important;
     }
     
-    .main-title {
-        font-size: 2.1rem;
-        font-weight: 700;
-        letter-spacing: -0.5px;
-        margin: 0;
+    /* Keep header visible for Sidebar toggle */
+    
+    /* Concept 1: Hero Banner full width breakout */
+    .hero-banner {
+        width: 100vw;
+        position: relative;
+        left: 50%;
+        right: 50%;
+        margin-left: -50vw;
+        margin-right: -50vw;
+        margin-top: -3rem; 
+        height: 60vh;
+        background-image: linear-gradient(rgba(15, 23, 42, 0.5), rgba(15, 23, 42, 0.8)), url('https://images.unsplash.com/photo-1516912481808-3406841bd33c?q=80&w=2070&auto=format&fit=crop');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
         display: flex;
+        flex-direction: column;
+        justify-content: center;
         align-items: center;
-        gap: 0.75rem;
+        text-align: center;
+        color: white;
+        margin-bottom: 4rem; /* Concept 4: Whitespace */
+        padding: 0 2rem;
     }
     
-    .sub-title {
-        font-size: 0.95rem;
-        color: #94A3B8;
-        margin-top: 0.4rem;
-        margin-bottom: 0;
+    .hero-title {
+        font-size: 12rem;
+        font-weight: 800;
+        text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        margin-bottom: 1rem;
+        letter-spacing: 2px;
+        color: white;
     }
-
-    /* Metric Card Styling */
+    
+    .hero-subtitle {
+        font-size: 5rem;
+        font-weight: 400;
+        max-width: 800px;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        line-height: 1.6;
+        color: rgba(255,255,255,0.9);
+    }
+    
+    /* Concept 4: Whitespace and Visual Hierarchy */
+    /* Map Container */
+    .stFoliumContainer {
+        border-radius: 16px;
+        height: 85vh !important;
+        width: 100% !important;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        margin-bottom: 4rem;
+        border: 1px solid rgba(128,128,128,0.2);
+    }
+    
+    /* KPI Panel container */
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(#left-panel-marker) {
+        border: none !important;
+        background: transparent !important;
+        margin-bottom: 2rem;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+    
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(#left-panel-marker) h3 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Metric Card Styling (Adapts to Light/Dark) */
     .metric-card {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 1rem 1.25rem;
-        backdrop-filter: blur(8px);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        background: rgba(128, 128, 128, 0.05);
+        border: 1px solid rgba(128, 128, 128, 0.1);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
     }
     .metric-title {
-        font-size: 0.82rem;
-        font-weight: 500;
-        color: #94A3B8;
+        font-size: 0.9rem;
+        font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        opacity: 0.7;
     }
     .metric-value {
-        font-size: 1.8rem;
-        font-weight: 700;
-        margin-top: 0.25rem;
-        color: #F8FAFC;
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-top: 0.5rem;
     }
     .metric-sub {
-        font-size: 0.8rem;
-        color: #64748B;
+        font-size: 0.85rem;
         margin-top: 0.2rem;
-    }
-
-    /* Legend Pill Badges */
-    .badge-pill {
-        display: inline-block;
-        padding: 0.25rem 0.6rem;
-        border-radius: 9999px;
-        font-size: 0.78rem;
-        font-weight: 600;
-        margin-right: 0.4rem;
-        margin-bottom: 0.3rem;
-    }
-    .badge-blue { background-color: rgba(59, 130, 246, 0.2); color: #60A5FA; border: 1px solid #3B82F6; }
-    .badge-green { background-color: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; }
-    .badge-yellow { background-color: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid #F59E0B; }
-    .badge-red { background-color: rgba(239, 68, 68, 0.2); color: #F87171; border: 1px solid #EF4444; }
-    .badge-purple { background-color: rgba(139, 92, 246, 0.2); color: #C084FC; border: 1px solid #8B5CF6; }
-
-    /* Map container styling */
-    /* Full Viewport App */
-    .main .block-container {
-        padding: 0 !important;
-        max-width: 100% !important;
-    }
-    header { display: none !important; }
-
-    /* Move Sidebar to Right - Reverted, keep on left */
-    [data-testid="stSidebar"] {
-        background-color: rgba(15, 23, 42, 0.9) !important;
-        backdrop-filter: blur(10px) !important;
-        border-right: 1px solid rgba(255,255,255,0.1) !important;
-        z-index: 1000 !important;
-    }
-
-    /* Floating right panel (KPIs) */
-    div[data-testid="stVerticalBlockBorderWrapper"]:has(> div > div > div > #left-panel-marker),
-    div[data-testid="stVerticalBlockBorderWrapper"]:has(#left-panel-marker) {
-        position: absolute !important;
-        top: 2rem !important;
-        right: 2rem !important;
-        left: auto !important;
-        width: 360px !important;
-        z-index: 999 !important;
-        background-color: rgba(15, 23, 42, 0.85) !important;
-        backdrop-filter: blur(12px) !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-    }
-
-    /* Floating Legend */
-    div[data-testid="stVerticalBlockBorderWrapper"]:has(#legend-marker) {
-        position: absolute !important;
-        bottom: 3rem !important;
-        right: 2rem !important; /* bottom right corner */
-        z-index: 999 !important;
-        background-color: rgba(15, 23, 42, 0.85) !important;
-        border-radius: 12px;
-        padding: 1rem;
+        opacity: 0.6;
     }
     
-    /* Toggle Expander */
+    /* Notification Toggle (Glassmorphism) */
+    .hero-notify-toggle {
+        margin-top: 1.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 0.5rem 1rem;
+        width: 80%;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+        color: white;
+        text-align: left;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    .hero-notify-toggle summary {
+        font-weight: 600;
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        list-style: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hero-notify-toggle summary::-webkit-details-marker {
+        display: none;
+    }
+    .hero-notify-toggle summary::before {
+        content: '▼';
+        font-size: 0.9rem;
+        margin-right: 0.8rem;
+        transition: transform 0.3s ease;
+    }
+    .hero-notify-toggle[open] summary::before {
+        transform: rotate(180deg);
+    }
+    .hero-notify-toggle ul {
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+        line-height: 1.6;
+        padding-left: 2rem;
+        padding-right: 1rem;
+        color: rgba(255, 255, 255, 0.95);
+    }
+    .hero-notify-toggle ul li {
+        margin-bottom: 0.8rem;
+    }
+    .hero-notify-toggle ul li strong {
+        color: #FCD34D; /* Light amber for highlights */
+    }
+    
+    /* Expander Data Tables */
     div[data-testid="stExpander"] {
-        position: absolute !important;
-        bottom: 2rem !important;
-        left: 22rem !important; /* avoid sidebar */
-        right: 24rem !important; /* avoid legend */
-        z-index: 999 !important;
-        width: auto !important;
-        max-height: 40vh !important;
-        overflow-y: auto !important;
-        background-color: rgba(15, 23, 42, 0.95) !important;
+        border-radius: 16px;
+        border: 1px solid rgba(128,128,128,0.1) !important;
+        margin-bottom: 4rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        background: rgba(128,128,128,0.02) !important;
+    }
+    
+    /* Make the outer map container relative so the switcher anchors to it */
+    div[data-testid="stVerticalBlock"]:has(> div > div > div > #legend-marker) {
+        position: relative !important;
     }
 
-    .stFoliumContainer {
-        border-radius: 0;
-        height: 100vh !important;
-        width: 100vw !important;
+    /* Layer Switcher (Floating over map) */
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(#legend-marker) {
+        position: absolute !important;
+        top: 1rem !important;
+        right: 1rem !important;
+        z-index: 9999 !important;
+        margin-top: 0 !important;
+        padding: 1rem 1.5rem !important;
+        border-radius: 12px !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(8px) !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
+        width: auto !important;
+        text-align: left;
     }
+    
+    /* Fix text color for light switcher background */
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(#legend-marker) label p,
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(#legend-marker) b {
+        color: #1E293B !important;
+    }
+    
+    /* Sidebar text enlargement */
+    [data-testid="stSidebar"] h3 { font-size: 1.5rem !important; }
+    [data-testid="stSidebar"] p { font-size: 1.1rem !important; }
+    .stRadio label p { font-size: 1.15rem !important; font-weight: 600 !important; }
+    .stRadio div[role="radiogroup"] label { padding: 0.5rem 1rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -230,82 +296,47 @@ REGION_GROUPS = {
 
 
 def get_temperature_color(temp: float) -> str:
-    """Return color hex matching temperature scales."""
-    if temp is None or pd.isna(temp):
-        return "#94A3B8"
-    if temp < 20.0:
-        return "#3B82F6"   # Blue (Cool)
-    elif 20.0 <= temp < 25.0:
-        return "#10B981"   # Green (Mild)
-    elif 25.0 <= temp < 30.0:
-        return "#F59E0B"   # Yellow/Amber (Warm)
-    else:
-        return "#EF4444"   # Red (Hot)
+    if temp is None or pd.isna(temp): return "#94A3B8"
+    if temp < 0: return "#004e98"
+    elif temp < 5: return "#3a86ff"
+    elif temp < 10: return "#00b4d8"
+    elif temp < 15: return "#06d6a0"
+    elif temp < 20: return "#90be6d"
+    elif temp < 25: return "#f9c74f"
+    elif temp < 30: return "#f8961e"
+    elif temp < 35: return "#f3722c"
+    elif temp < 40: return "#d90429"
+    else: return "#9d0208"
 
-
-def get_weather_info(wx: str) -> Tuple[str, str]:
-    """Return emoji and category color based on weather description."""
+def get_weather_info(wx: str):
     wx_s = str(wx or "")
-    if any(k in wx_s for k in ["雷", "雹"]):
-        return "⛈️", "#7C3AED"  # Purple
-    elif any(k in wx_s for k in ["雨", "陣雨", "短暫雨", "毛毛雨"]):
-        return "🌧️", "#0284C7"  # Deep Sky Blue
-    elif any(k in wx_s for k in ["陰"]):
-        return "☁️", "#64748B"  # Slate Gray
-    elif any(k in wx_s for k in ["多雲"]):
-        return "⛅", "#0EA5E9"  # Sky Blue
-    elif any(k in wx_s for k in ["晴"]):
-        return "☀️", "#F59E0B"  # Amber
-    elif any(k in wx_s for k in ["霧", "霾"]):
-        return "🌫️", "#94A3B8"  # Cool Gray
-    else:
-        return "🌤️", "#3B82F6"
-
+    if any(k in wx_s for k in ["雷", "雹"]): return "⛈️", "#8B5CF6"
+    elif any(k in wx_s for k in ["雨", "陣雨", "短暫雨", "毛毛雨"]): return "🌧️", "#3B82F6"
+    elif any(k in wx_s for k in ["陰"]): return "☁️", "#34D399"
+    elif any(k in wx_s for k in ["多雲"]): return "⛅", "#60A5FA"
+    elif any(k in wx_s for k in ["晴"]): return "☀️", "#FBBF24"
+    else: return "🌤️", "#34D399"
 
 def get_rain_color(pop: float) -> str:
-    """Return color hex matching precipitation probability."""
-    if pop is None or pd.isna(pop):
-        return "#94A3B8"
-    if pop < 20.0:
-        return "#10B981"   # Emerald (Dry)
-    elif pop < 50.0:
-        return "#F59E0B"   # Amber (Scattered chance)
-    elif pop < 80.0:
-        return "#3B82F6"   # Blue (Likely rain)
-    else:
-        return "#8B5CF6"   # Purple (Heavy / Very likely)
-
+    if pop is None or pd.isna(pop): return "#94A3B8"
+    if pop < 20.0: return "#10B981"
+    elif pop < 50.0: return "#FBBF24"
+    elif pop < 80.0: return "#3B82F6"
+    else: return "#8B5CF6"
 
 def get_precipitation_color(precip: float) -> str:
-    """Return color hex for real-time mm precipitation."""
-    if precip is None or pd.isna(precip) or precip <= 0.0:
-        return "#10B981"   # Green (0 mm)
-    elif precip < 5.0:
-        return "#0EA5E9"   # Light Blue (<5 mm)
-    elif precip < 15.0:
-        return "#3B82F6"   # Blue (5-15 mm)
-    elif precip < 40.0:
-        return "#F59E0B"   # Amber (15-40 mm)
-    else:
-        return "#EF4444"   # Red (>40 mm Heavy rain)
-
+    if precip is None or pd.isna(precip) or precip <= 0.0: return "#10B981"
+    elif precip < 5.0: return "#FBBF24"
+    elif precip < 15.0: return "#3B82F6"
+    else: return "#8B5CF6"
 
 def get_aqi_color(aqi_val: float) -> str:
-    """Return color hex matching AQI scales."""
-    if pd.isna(aqi_val) or aqi_val is None:
-        return "#94A3B8"
-    if aqi_val <= 50:
-        return "#10B981"   # Green (Good)
-    elif aqi_val <= 100:
-        return "#F59E0B"   # Yellow/Amber (Moderate)
-    elif aqi_val <= 150:
-        return "#F97316"   # Orange (Unhealthy for Sensitive)
-    elif aqi_val <= 200:
-        return "#EF4444"   # Red (Unhealthy)
-    elif aqi_val <= 300:
-        return "#8B5CF6"   # Purple (Very Unhealthy)
-    else:
-        return "#7F1D1D"   # Maroon (Hazardous)
+    if pd.isna(aqi_val) or aqi_val is None: return "#94A3B8"
+    if aqi_val <= 50: return "#10B981"
+    elif aqi_val <= 100: return "#FBBF24"
+    elif aqi_val <= 150: return "#F97316"
+    elif aqi_val <= 200: return "#EF4444"
+    else: return "#8B5CF6"
 
 
 # -----------------------------------------------------------------------------
@@ -375,6 +406,7 @@ def trigger_api_sync() -> bool:
             db.save_aqi_observations(aqi_records)
 
         st.cache_data.clear()
+        st.session_state.get("map_html_cache", {}).clear()
         return True
     except Exception as err:
         st.error(f"同步資料失敗: {err}")
@@ -385,9 +417,19 @@ def trigger_api_sync() -> bool:
 # 4. Main Application Layout & Header
 # -----------------------------------------------------------------------------
 st.markdown("""
-<div class="main-title-container">
-    <h1 class="main-title">🌤️ 台灣天氣預報與即時觀測儀表板</h1>
-    <p class="sub-title">中央氣象署 (CWA) 開放資料平台 ． 36小時天氣預報 (F-C0032-001) ✕ 360+ 測站即時觀測 (O-A0003-001)</p>
+<div class="hero-banner">
+    <h1 class="hero-title">探索台灣氣象</h1>
+    <p class="hero-subtitle">精準觀測 · 即時預警 · 智慧數據</p>
+    <p style="font-size: 2rem; color: rgba(255,255,255,0.7); margin-top: 2rem; margin-bottom: 0.5rem;">中央氣象署 (CWA) 開放資料 ✕ 360+ 測站即時觀測</p>
+    
+<details class="hero-notify-toggle">
+<summary>🔔 最新即時氣象與環境通報 (點擊展開)</summary>
+<ul>
+<li><strong>【環境部空品網】</strong>環境部空氣品質監測網目前公告系統維護中 (預計 12:00-14:00 進行調整)，期間可能暫停部分服務。</li>
+<li><strong>【高溫資訊】</strong>臺南市發布橙色燈號，恐連續出現 36 度高溫；南投縣、屏東縣為黃色燈號，請注意防曬與補充水分。</li>
+<li><strong>【天氣概況】</strong>輕度颱風「舒力基」於鵝鑾鼻東方海面向北移動。今明兩天全台大多為多雲到晴，東半部需防長浪發生。</li>
+</ul>
+</details>
 </div>
 """, unsafe_allow_html=True)
 
@@ -475,8 +517,7 @@ with st.container(border=True):
     st.markdown('<div id="left-panel-marker"></div>', unsafe_allow_html=True)
     st.markdown("### 🇹🇼 台灣即時氣象")
     
-    col1, col2 = st.columns(2)
-    col3, col4 = st.columns(2)
+    col1, col2, col3, col4 = st.columns(4)
 
 
 if data_view_mode.startswith("縣市"):
@@ -640,44 +681,78 @@ with st.container():
         # Dynamic Legend Banner matching display mode
         if display_mode.startswith("🌡️ 氣溫"):
             st.markdown("""
-            <div style="font-size:0.82rem; margin-bottom: 0.6rem;">
-                <b>氣溫色階：</b>
-                <span class="badge-pill badge-blue">&lt; 20°C 寒冷/涼爽</span>
-                <span class="badge-pill badge-green">20 ~ 25°C 舒適宜人</span>
-                <span class="badge-pill badge-yellow">25 ~ 30°C 溫暖微熱</span>
-                <span class="badge-pill badge-red">&gt; 30°C 炎熱高溫</span>
+            <div style="margin-top: 1rem; width: 100%;">
+                <div style="font-weight: 700; margin-bottom: 0.5rem; font-size: 0.85rem; color: #1E293B;">氣溫色階 (Temperature)</div>
+                <div style="display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 0.4rem; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="flex: 1; background: #3B82F6;"></div>
+                    <div style="flex: 1; background: #10B981;"></div>
+                    <div style="flex: 1; background: #F59E0B;"></div>
+                    <div style="flex: 1; background: #EF4444;"></div>
+                </div>
+                <div style="display: flex; font-size: 0.7rem; color: #475569; text-align: center; font-weight: 500;">
+                    <div style="flex: 1;">&lt;20°C<br>涼爽</div>
+                    <div style="flex: 1;">20-25°C<br>舒適</div>
+                    <div style="flex: 1;">25-30°C<br>微熱</div>
+                    <div style="flex: 1;">&gt;30°C<br>炎熱</div>
+                </div>
             </div>
             """, unsafe_allow_html=True)
         elif display_mode.startswith("☁️ 天氣"):
             st.markdown("""
-            <div style="font-size:0.82rem; margin-bottom: 0.6rem;">
-                <b>天氣現象標籤：</b>
-                <span class="badge-pill badge-yellow">☀️ 晴朗</span>
-                <span class="badge-pill badge-blue">⛅ 多雲</span>
-                <span class="badge-pill badge-green">☁️ 陰天</span>
-                <span class="badge-pill badge-blue">🌧️ 降雨/陣雨</span>
-                <span class="badge-pill badge-purple">⛈️ 雷雨</span>
+            <div style="margin-top: 1rem; width: 100%;">
+                <div style="font-weight: 700; margin-bottom: 0.5rem; font-size: 0.85rem; color: #1E293B;">天氣現象 (Weather)</div>
+                <div style="display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 0.4rem; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="flex: 1; background: #FBBF24;"></div>
+                    <div style="flex: 1; background: #60A5FA;"></div>
+                    <div style="flex: 1; background: #34D399;"></div>
+                    <div style="flex: 1; background: #3B82F6;"></div>
+                    <div style="flex: 1; background: #8B5CF6;"></div>
+                </div>
+                <div style="display: flex; font-size: 0.7rem; color: #475569; text-align: center; font-weight: 500;">
+                    <div style="flex: 1;">☀️晴朗</div>
+                    <div style="flex: 1;">⛅多雲</div>
+                    <div style="flex: 1;">☁️陰天</div>
+                    <div style="flex: 1;">🌧️降雨</div>
+                    <div style="flex: 1;">⛈️雷雨</div>
+                </div>
             </div>
             """, unsafe_allow_html=True)
         elif display_mode.startswith("🍃 空氣品質"):
             st.markdown("""
-            <div style="font-size:0.82rem; margin-bottom: 0.6rem;">
-                <b>空氣品質 (AQI) 色階：</b>
-                <span class="badge-pill badge-green">≤ 50 良好</span>
-                <span class="badge-pill badge-yellow">51 ~ 100 普通</span>
-                <span class="badge-pill" style="background-color: rgba(249, 115, 22, 0.2); color: #F97316; border: 1px solid #F97316;">101 ~ 150 敏感族群不良</span>
-                <span class="badge-pill badge-red">151 ~ 200 對所有族群不良</span>
-                <span class="badge-pill badge-purple">> 200 非常不健康/危害</span>
+            <div style="margin-top: 1rem; width: 100%;">
+                <div style="font-weight: 700; margin-bottom: 0.5rem; font-size: 0.85rem; color: #1E293B;">空氣品質 AQI (Air Quality)</div>
+                <div style="display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 0.4rem; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="flex: 1; background: #10B981;"></div>
+                    <div style="flex: 1; background: #FBBF24;"></div>
+                    <div style="flex: 1; background: #F97316;"></div>
+                    <div style="flex: 1; background: #EF4444;"></div>
+                    <div style="flex: 1; background: #8B5CF6;"></div>
+                </div>
+                <div style="display: flex; font-size: 0.7rem; color: #475569; text-align: center; font-weight: 500;">
+                    <div style="flex: 1;">≤50<br>良好</div>
+                    <div style="flex: 1;">51-100<br>普通</div>
+                    <div style="flex: 1;">101-150<br>敏感族群</div>
+                    <div style="flex: 1;">151-200<br>不良</div>
+                    <div style="flex: 1;">&gt;200<br>危害</div>
+                </div>
             </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown("""
-            <div style="font-size:0.82rem; margin-bottom: 0.6rem;">
-                <b>降雨指標色階：</b>
-                <span class="badge-pill badge-green">&lt; 20% / 0mm 乾爽舒適</span>
-                <span class="badge-pill badge-yellow">20 ~ 50% / &lt;5mm 局部有雨</span>
-                <span class="badge-pill badge-blue">50 ~ 80% / 5~15mm 降雨顯著</span>
-                <span class="badge-pill badge-purple">&gt; 80% / &gt;15mm 慎防大雨</span>
+            <div style="margin-top: 1rem; width: 100%;">
+                <div style="font-weight: 700; margin-bottom: 0.5rem; font-size: 0.85rem; color: #1E293B;">降雨指標 (Rain / PoP)</div>
+                <div style="display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 0.4rem; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="flex: 1; background: #10B981;"></div>
+                    <div style="flex: 1; background: #FBBF24;"></div>
+                    <div style="flex: 1; background: #3B82F6;"></div>
+                    <div style="flex: 1; background: #8B5CF6;"></div>
+                </div>
+                <div style="display: flex; font-size: 0.7rem; color: #475569; text-align: center; font-weight: 500;">
+                    <div style="flex: 1;">&lt;20%<br>乾爽</div>
+                    <div style="flex: 1;">20-50%<br>局部雨</div>
+                    <div style="flex: 1;">50-80%<br>顯著</div>
+                    <div style="flex: 1;">&gt;80%<br>大雨</div>
+                </div>
             </div>
             """, unsafe_allow_html=True)
     
@@ -696,254 +771,272 @@ with st.container():
         map_center = [23.7, 120.9]
         zoom_level = 7
 
-    tw_map = folium.Map(
-        location=[23.7, 120.9],
-        zoom_start=7,
-        min_zoom=7,
-        max_bounds=True,
-        min_lat=20.5,
-        max_lat=26.5,
-        min_lon=117.5,
-        max_lon=123.5,
-        tiles="OpenStreetMap",
-        control_scale=True,
-        prefer_canvas=True,
-    )
-    plugins.Fullscreen(position='topleft', title='全螢幕', titleCancel='退出全螢幕').add_to(tw_map)
+    _sd = selected_date if "selected_date" in locals() else ""
+    map_cache_key = f"{data_view_mode}_{display_mode}_{selected_county}_{selected_macro}_{_sd}"
+    if "map_html_cache" not in st.session_state:
+        st.session_state["map_html_cache"] = {}
 
-    # -------------------------------------------------------------------------
-    # Render Markers: County Forecast vs Live Station Observation
-    # -------------------------------------------------------------------------
-    if data_view_mode.startswith("縣市"):
-        # Plot County Level Forecasts
-        for _, row in df_slot.iterrows():
-            county = row["regionName"]
-            if county not in TAIWAN_LOCATIONS:
-                continue
+    if map_cache_key in st.session_state["map_html_cache"]:
+        map_html = st.session_state["map_html_cache"][map_cache_key]
+    else:
+        tw_map = folium.Map(
+            location=map_center,
+            zoom_start=zoom_level,
+            min_zoom=7,
+            max_bounds=True,
+            min_lat=20.5,
+            max_lat=26.5,
+            min_lon=117.5,
+            max_lon=123.5,
+            tiles="OpenStreetMap",
+            control_scale=True,
+            prefer_canvas=True,
+        )
+        plugins.Fullscreen(position='topleft', title='全螢幕', titleCancel='退出全螢幕').add_to(tw_map)
 
-            coords = TAIWAN_LOCATIONS[county]
-            max_t = row["maxT"]
-            min_t = row["minT"]
-            wx_desc = row.get("wx", "無資料")
-            pop_desc = row.get("pop", "0")
-            pop_val = row.get("pop_num", 0)
+        # -------------------------------------------------------------------------
+        # Render Markers: County Forecast vs Live Station Observation
+        # -------------------------------------------------------------------------
+        if data_view_mode.startswith("縣市"):
+            # Plot County Level Forecasts
+            for _, row in df_slot.iterrows():
+                county = row["regionName"]
+                if county not in TAIWAN_LOCATIONS:
+                    continue
 
-            # Determine marker presentation based on display_mode
-            if display_mode.startswith("🌡️ 氣溫"):
-                marker_color = get_temperature_color(max_t)
-                icon_text = f"{int(round(max_t))}°"
-                icon_font_size = "10px"
-            elif display_mode.startswith("☁️ 天氣"):
-                emoji, wx_color = get_weather_info(wx_desc)
-                marker_color = wx_color
-                icon_text = emoji
-                icon_font_size = "13px"
-            else:  # Rainy Probability
-                marker_color = get_rain_color(pop_val)
-                icon_text = f"{int(pop_val)}%"
-                icon_font_size = "9px"
+                coords = TAIWAN_LOCATIONS[county]
+                max_t = row["maxT"]
+                min_t = row["minT"]
+                wx_desc = row.get("wx", "無資料")
+                pop_desc = row.get("pop", "0")
+                pop_val = row.get("pop_num", 0)
 
-            popup_html = f"""
-            <div style="font-family: 'Noto Sans TC', sans-serif; min-width: 175px; padding: 4px;">
-                <h4 style="margin: 0 0 6px 0; color: #1E293B; border-bottom: 2px solid {marker_color}; padding-bottom: 4px;">
-                    {county}
-                </h4>
-                <div style="font-size: 13px; color: #475569; line-height: 1.6;">
-                    <div><b>預報天氣：</b> {wx_desc}</div>
-                    <div><b>氣溫範圍：</b> <span style="color:#2563EB; font-weight:bold;">{min_t}°C</span> ~ <span style="color:#DC2626; font-weight:bold;">{max_t}°C</span></div>
-                    <div><b>降雨機率：</b> 💧 <b>{pop_desc}%</b></div>
-                    <div style="font-size: 11px; color: #94A3B8; margin-top: 4px;">時段: {format_date_label(selected_date)}</div>
-                </div>
-            </div>
-            """
+                # Determine marker presentation based on display_mode
+                if display_mode.startswith("🌡️ 氣溫"):
+                    marker_color = get_temperature_color(max_t)
+                    icon_text = f"{int(round(max_t))}°"
+                    icon_font_size = "10px"
+                elif display_mode.startswith("☁️ 天氣"):
+                    emoji, wx_color = get_weather_info(wx_desc)
+                    marker_color = wx_color
+                    icon_text = emoji
+                    icon_font_size = "13px"
+                else:  # Rainy Probability
+                    marker_color = get_rain_color(pop_val)
+                    icon_text = f"{int(pop_val)}%"
+                    icon_font_size = "9px"
 
-            folium.CircleMarker(
-                location=[coords["lat"], coords["lng"]],
-                radius=16,
-                color=marker_color,
-                weight=3,
-                fill=True,
-                fill_color=marker_color,
-                fill_opacity=0.8,
-                tooltip=f"{county}: {wx_desc} ｜ {min_t}~{max_t}°C ｜ 💧{pop_desc}%",
-                popup=folium.Popup(popup_html, max_width=280)
-            ).add_to(tw_map)
-
-            folium.Marker(
-                location=[coords["lat"], coords["lng"]],
-                icon=folium.DivIcon(
-                    icon_size=(50, 20),
-                    icon_anchor=(25, 10),
-                    html=f"""
-                    <div style="font-size: {icon_font_size}; font-weight: 700; color: #ffffff; text-align: center; text-shadow: 0px 1px 3px rgba(0,0,0,0.85); pointer-events: none;">
-                        {icon_text}
+                popup_html = f"""
+                <div style="font-family: 'Noto Sans TC', sans-serif; min-width: 175px; padding: 4px;">
+                    <h4 style="margin: 0 0 6px 0; color: #1E293B; border-bottom: 2px solid {marker_color}; padding-bottom: 4px;">
+                        {county}
+                    </h4>
+                    <div style="font-size: 13px; color: #475569; line-height: 1.6;">
+                        <div><b>預報天氣：</b> {wx_desc}</div>
+                        <div><b>氣溫範圍：</b> <span style="color:#2563EB; font-weight:bold;">{min_t}°C</span> ~ <span style="color:#DC2626; font-weight:bold;">{max_t}°C</span></div>
+                        <div><b>降雨機率：</b> 💧 <b>{pop_desc}%</b></div>
+                        <div style="font-size: 11px; color: #94A3B8; margin-top: 4px;">時段: {format_date_label(selected_date)}</div>
                     </div>
-                    """
+                </div>
+                """
+
+                html_bubble = f"""
+                <div style="background-color: {marker_color}; width: 44px; height: 44px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 16px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); opacity: 0.95;">
+                    {icon_text}
+                </div>
+                """
+                folium.Marker(
+                    location=[coords["lat"], coords["lng"]],
+                    icon=folium.DivIcon(html=html_bubble, icon_size=(44,44), icon_anchor=(22,22)),
+                    tooltip=f"{county}: {wx_desc} ｜ {min_t}~{max_t}°C ｜ 💧{pop_desc}%",
+                    popup=folium.Popup(popup_html, max_width=280)
+                ).add_to(tw_map)
+
+        elif data_view_mode.startswith("全台 360+"):
+            # Plot 360+ Real-Time Stations (O-A0003-001)
+            st_view = df_stations.dropna(subset=["lat", "lng"]).copy()
+            marker_cluster = plugins.MarkerCluster(name="測站叢集").add_to(tw_map)
+
+            for _, row in st_view.iterrows():
+                st_name = row["stationName"]
+                st_county = row.get("countyName", "")
+                st_town = row.get("townName", "")
+                st_temp = row.get("temp")
+                st_precip = row.get("precipitation", 0.0)
+                st_wx = row.get("weather", "無資料")
+                st_hum = row.get("humidity", "--")
+                st_wind = row.get("windSpeed", "--")
+
+                if display_mode.startswith("🌡️ 氣溫"):
+                    marker_color = get_temperature_color(st_temp)
+                    icon_text = f"{int(round(st_temp))}°" if pd.notna(st_temp) else "--"
+                    icon_font_size = "9px"
+                elif display_mode.startswith("☁️ 天氣"):
+                    emoji, wx_color = get_weather_info(st_wx)
+                    marker_color = wx_color
+                    icon_text = emoji
+                    icon_font_size = "11px"
+                else:  # Rain
+                    marker_color = get_precipitation_color(st_precip)
+                    icon_text = f"{st_precip:.0f}m" if pd.notna(st_precip) else "0m"
+                    icon_font_size = "8px"
+
+                popup_html = f"""
+                <div style="font-family: 'Noto Sans TC', sans-serif; min-width: 180px; padding: 4px;">
+                    <h4 style="margin: 0 0 4px 0; color: #1E293B; border-bottom: 2px solid {marker_color};">
+                        {st_name} 測站 ({st_county}{st_town})
+                    </h4>
+                    <div style="font-size: 12px; color: #475569; line-height: 1.6;">
+                        <div><b>當前天氣：</b> {st_wx}</div>
+                        <div><b>即時氣溫：</b> <span style="font-weight:bold; color:#DC2626;">{st_temp}°C</span></div>
+                        <div><b>即時降水：</b> 💧 <b>{st_precip} mm</b></div>
+                        <div><b>相對濕度：</b> {st_hum}% ｜ <b>風速：</b> {st_wind} m/s</div>
+                    </div>
+                </div>
+                """
+
+                html_bubble = f"""
+                <div style="background-color: {marker_color}; width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 15px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); box-shadow: 0 4px 8px rgba(0,0,0,0.4); opacity: 0.95;">
+                    {icon_text}
+                </div>
+                """
+                folium.Marker(
+                    location=[row["lat"], row["lng"]],
+                    icon=folium.DivIcon(html=html_bubble, icon_size=(40,40), icon_anchor=(20,20)),
+                    tooltip=f"{st_name} ({st_county}): {st_temp}°C ｜ {st_wx} ｜ 💧{st_precip}mm",
+                    popup=folium.Popup(popup_html, max_width=280)
+                ).add_to(marker_cluster)
+
+        elif data_view_mode.startswith("全台空氣品質"):
+            # Plot Real-Time AQI Observations (AQX_P_432)
+            aqi_view = df_aqi.dropna(subset=["latitude", "longitude"]).copy()
+            marker_cluster = plugins.MarkerCluster(name="空品測站叢集").add_to(tw_map)
+
+            for _, row in aqi_view.iterrows():
+                marker_color = get_aqi_color(row["aqi"])
+                icon_text = f"{int(row['aqi'])}" if pd.notna(row['aqi']) else "--"
+
+                popup_html = f"""
+                <div style="font-family: 'Noto Sans TC', sans-serif; min-width: 180px; padding: 4px;">
+                    <h4 style="margin: 0 0 4px 0; color: #1E293B; border-bottom: 2px solid {marker_color};">
+                        {row['sitename']} ({row['county']})
+                    </h4>
+                    <div style="font-size: 12px; color: #475569; line-height: 1.6;">
+                        <div><b>空氣品質 (AQI)：</b> <span style="font-weight:bold; color:{marker_color};">{row['aqi']}</span> ({row['status']})</div>
+                        <div><b>主要污染物：</b> {row['pollutant'] if row['pollutant'] else '無'}</div>
+                        <div><b>PM2.5：</b> {row['pm25']} μg/m3</div>
+                        <div><b>PM10：</b> {row['pm10']} μg/m3</div>
+                    </div>
+                </div>
+                """
+
+                html_bubble = f"""
+                <div style="background-color: {marker_color}; width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 15px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); box-shadow: 0 4px 8px rgba(0,0,0,0.4); opacity: 0.95;">
+                    {icon_text}
+                </div>
+                """
+                folium.Marker(
+                    location=[row["latitude"], row["longitude"]],
+                    icon=folium.DivIcon(html=html_bubble, icon_size=(40,40), icon_anchor=(20,20)),
+                    tooltip=f"{row['sitename']}: AQI {row['aqi']} ({row['status']})",
+                    popup=folium.Popup(popup_html, max_width=280)
+                ).add_to(marker_cluster)
+
+                folium.Marker(
+                    location=[row["latitude"], row["longitude"]],
+                    icon=folium.DivIcon(
+                        icon_size=(40, 18),
+                        icon_anchor=(20, 9),
+                        html=f"""
+                        <div style="font-size: 9px; font-weight: 700; color: #ffffff; text-align: center; text-shadow: 0px 1px 3px rgba(0,0,0,0.9); pointer-events: none;">
+                            {icon_text}
+                        </div>
+                        """
+                    )
+                ).add_to(marker_cluster)
+
+        import json
+        @st.cache_data
+        def load_geojson():
+            with open("taiwan_counties.json", "r", encoding="utf-8") as f:
+                return json.load(f)
+        try:
+            geojson_data = load_geojson()
+
+            # Build county color map for choropleth rendering
+            county_color_map = {}
+            if data_view_mode.startswith("縣市"):
+                for _, row in df_slot.iterrows():
+                    c = row["regionName"]
+                    if display_mode.startswith("🌡️ 氣溫"):
+                        county_color_map[c] = get_temperature_color(row["maxT"])
+                    elif display_mode.startswith("☁️ 天氣"):
+                        _, color = get_weather_info(row.get("wx", ""))
+                        county_color_map[c] = color
+                    else:
+                        county_color_map[c] = get_rain_color(row.get("pop_num", 0))
+            elif data_view_mode.startswith("全台 360+"):
+                if display_mode.startswith("🌡️ 氣溫"):
+                    grp = st_view.groupby("countyName")["temp"].mean()
+                    for c, val in grp.items(): county_color_map[c] = get_temperature_color(val)
+                elif display_mode.startswith("💧 降雨"):
+                    grp = st_view.groupby("countyName")["precipitation"].mean()
+                    for c, val in grp.items(): county_color_map[c] = get_precipitation_color(val)
+                elif display_mode.startswith("☁️ 天氣"):
+                    grp = st_view.groupby("countyName")["weather"].agg(lambda x: x.mode()[0] if not x.empty else "")
+                    for c, val in grp.items(): 
+                        _, color = get_weather_info(val)
+                        county_color_map[c] = color
+            elif data_view_mode.startswith("全台空氣品質"):
+                grp = aqi_view.groupby("county")["aqi"].mean()
+                for c, val in grp.items(): county_color_map[c] = get_aqi_color(val)
+
+            def get_county_style(feature):
+                c_name = feature['properties']['COUNTYNAME']
+                # Try to match the exact name
+                color = county_color_map.get(c_name)
+
+                # Alias handling for Taiwan naming conventions and historical county updates
+                if not color: color = county_color_map.get(c_name.replace("臺", "台"))
+                if not color: color = county_color_map.get(c_name.replace("台", "臺"))
+                if not color: color = county_color_map.get(c_name.replace("桃園縣", "桃園市"))
+
+                return {
+                    'fillColor': color if color else '#ffffff',
+                    'color': '#333333',
+                    'weight': 1,
+                    'fillOpacity': 0.6 if color else 0.05
+                }
+
+            folium.GeoJson(
+                geojson_data,
+                name="台灣縣市邊界",
+                style_function=get_county_style,
+                highlight_function=lambda feature: {
+                    'fillColor': '#3b82f6',
+                    'color': '#3b82f6',
+                    'weight': 2,
+                    'fillOpacity': 0.4
+                },
+                tooltip=folium.GeoJsonTooltip(
+                    fields=['COUNTYNAME'],
+                    aliases=[''],
+                    labels=False,
+                    style="background-color: white !important; color: #333333 !important; font-family: arial; font-size: 14px; padding: 6px 10px; border: none !important; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.15) !important;"
                 )
             ).add_to(tw_map)
+        except Exception as e:
+            pass
 
-    elif data_view_mode.startswith("全台 360+"):
-        # Plot 360+ Real-Time Stations (O-A0003-001)
-        st_view = df_stations.dropna(subset=["lat", "lng"]).copy()
-        marker_cluster = plugins.MarkerCluster(name="測站叢集").add_to(tw_map)
+        folium.LayerControl(position="topright").add_to(tw_map)
+        map_html = tw_map._repr_html_()
+        if len(st.session_state["map_html_cache"]) > 20:
+            st.session_state["map_html_cache"].clear()
+        st.session_state["map_html_cache"][map_cache_key] = map_html
 
-        for _, row in st_view.iterrows():
-            st_name = row["stationName"]
-            st_county = row.get("countyName", "")
-            st_town = row.get("townName", "")
-            st_temp = row.get("temp")
-            st_precip = row.get("precipitation", 0.0)
-            st_wx = row.get("weather", "無資料")
-            st_hum = row.get("humidity", "--")
-            st_wind = row.get("windSpeed", "--")
-
-            if display_mode.startswith("🌡️ 氣溫"):
-                marker_color = get_temperature_color(st_temp)
-                icon_text = f"{int(round(st_temp))}°" if pd.notna(st_temp) else "--"
-                icon_font_size = "9px"
-            elif display_mode.startswith("☁️ 天氣"):
-                emoji, wx_color = get_weather_info(st_wx)
-                marker_color = wx_color
-                icon_text = emoji
-                icon_font_size = "11px"
-            else:  # Rain
-                marker_color = get_precipitation_color(st_precip)
-                icon_text = f"{st_precip:.0f}m" if pd.notna(st_precip) else "0m"
-                icon_font_size = "8px"
-
-            popup_html = f"""
-            <div style="font-family: 'Noto Sans TC', sans-serif; min-width: 180px; padding: 4px;">
-                <h4 style="margin: 0 0 4px 0; color: #1E293B; border-bottom: 2px solid {marker_color};">
-                    {st_name} 測站 ({st_county}{st_town})
-                </h4>
-                <div style="font-size: 12px; color: #475569; line-height: 1.6;">
-                    <div><b>當前天氣：</b> {st_wx}</div>
-                    <div><b>即時氣溫：</b> <span style="font-weight:bold; color:#DC2626;">{st_temp}°C</span></div>
-                    <div><b>即時降水：</b> 💧 <b>{st_precip} mm</b></div>
-                    <div><b>相對濕度：</b> {st_hum}% ｜ <b>風速：</b> {st_wind} m/s</div>
-                </div>
-            </div>
-            """
-
-            folium.CircleMarker(
-                location=[row["lat"], row["lng"]],
-                radius=11,
-                color=marker_color,
-                weight=2,
-                fill=True,
-                fill_color=marker_color,
-                fill_opacity=0.75,
-                tooltip=f"{st_name} ({st_county}): {st_temp}°C ｜ {st_wx} ｜ 💧{st_precip}mm",
-                popup=folium.Popup(popup_html, max_width=280)
-            ).add_to(marker_cluster)
-
-            folium.Marker(
-                location=[row["lat"], row["lng"]],
-                icon=folium.DivIcon(
-                    icon_size=(40, 18),
-                    icon_anchor=(20, 9),
-                    html=f"""
-                    <div style="font-size: {icon_font_size}; font-weight: 700; color: #ffffff; text-align: center; text-shadow: 0px 1px 3px rgba(0,0,0,0.9); pointer-events: none;">
-                        {icon_text}
-                    </div>
-                    """
-                )
-            ).add_to(marker_cluster)
-
-    elif data_view_mode.startswith("全台空氣品質"):
-        # Plot Real-Time AQI Observations (AQX_P_432)
-        aqi_view = df_aqi.dropna(subset=["latitude", "longitude"]).copy()
-        marker_cluster = plugins.MarkerCluster(name="空品測站叢集").add_to(tw_map)
-
-        for _, row in aqi_view.iterrows():
-            marker_color = get_aqi_color(row["aqi"])
-            icon_text = f"{int(row['aqi'])}" if pd.notna(row['aqi']) else "--"
-            
-            popup_html = f"""
-            <div style="font-family: 'Noto Sans TC', sans-serif; min-width: 180px; padding: 4px;">
-                <h4 style="margin: 0 0 4px 0; color: #1E293B; border-bottom: 2px solid {marker_color};">
-                    {row['sitename']} ({row['county']})
-                </h4>
-                <div style="font-size: 12px; color: #475569; line-height: 1.6;">
-                    <div><b>空氣品質 (AQI)：</b> <span style="font-weight:bold; color:{marker_color};">{row['aqi']}</span> ({row['status']})</div>
-                    <div><b>主要污染物：</b> {row['pollutant'] if row['pollutant'] else '無'}</div>
-                    <div><b>PM2.5：</b> {row['pm25']} μg/m3</div>
-                    <div><b>PM10：</b> {row['pm10']} μg/m3</div>
-                </div>
-            </div>
-            """
-
-            folium.CircleMarker(
-                location=[row["latitude"], row["longitude"]],
-                radius=11,
-                color=marker_color,
-                weight=2,
-                fill=True,
-                fill_color=marker_color,
-                fill_opacity=0.75,
-                tooltip=f"{row['sitename']}: AQI {row['aqi']} ({row['status']})",
-                popup=folium.Popup(popup_html, max_width=280)
-            ).add_to(marker_cluster)
-
-            folium.Marker(
-                location=[row["latitude"], row["longitude"]],
-                icon=folium.DivIcon(
-                    icon_size=(40, 18),
-                    icon_anchor=(20, 9),
-                    html=f"""
-                    <div style="font-size: 9px; font-weight: 700; color: #ffffff; text-align: center; text-shadow: 0px 1px 3px rgba(0,0,0,0.9); pointer-events: none;">
-                        {icon_text}
-                    </div>
-                    """
-                )
-            ).add_to(marker_cluster)
-
-    import json
-    try:
-        with open("taiwan_counties.json", "r", encoding="utf-8") as f:
-            geojson_data = json.load(f)
-        
-        folium.GeoJson(
-            geojson_data,
-            name="台灣縣市邊界",
-            style_function=lambda feature: {
-                'fillColor': '#ffffff',
-                'color': '#333333',
-                'weight': 1,
-                'fillOpacity': 0.05
-            },
-            highlight_function=lambda feature: {
-                'fillColor': '#3b82f6',
-                'color': '#3b82f6',
-                'weight': 2,
-                'fillOpacity': 0.4
-            },
-            tooltip=folium.GeoJsonTooltip(
-                fields=['COUNTYNAME'],
-                aliases=[''],
-                labels=False,
-                style="background-color: white !important; color: #333333 !important; font-family: arial; font-size: 14px; padding: 6px 10px; border: none !important; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.15) !important;"
-            )
-        ).add_to(tw_map)
-    except Exception as e:
-        pass
-
-    folium.LayerControl(position="topright").add_to(tw_map)
-    st_data = st_folium(tw_map, width=None, height=750, use_container_width=True, center=map_center, zoom=zoom_level, returned_objects=["last_active_drawing"])
-    
-    if st_data and st_data.get("last_active_drawing"):
-        clicked_county = st_data["last_active_drawing"]["properties"].get("COUNTYNAME")
-        if clicked_county:
-            clicked_macro = "全台灣 (All)"
-            for m, c_list in REGION_GROUPS.items():
-                if m != "全台灣 (All)" and clicked_county in c_list:
-                    clicked_macro = m
-                    break
-            
-            if st.session_state.get("macro_sel") != clicked_macro or st.session_state.get("county_sel") != clicked_county:
-                st.session_state["pending_macro"] = clicked_macro
-                st.session_state["pending_county"] = clicked_county
-                st.rerun()
+    import streamlit.components.v1 as components
+    # Instant rendering via cached HTML string
+    components.html(map_html, height=900)
 
 with st.expander("📊 顯示詳細數據分析與資料表 (View Analytics & Data Tables)", expanded=False):
     st.markdown("### 📈 數據分析與趨勢視覺化 (Trend Analytics)")

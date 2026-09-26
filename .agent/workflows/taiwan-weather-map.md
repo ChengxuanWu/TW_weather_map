@@ -50,17 +50,17 @@ Select the appropriate dataset / table based on the required granularity and tim
    ```
 2. The script parses MinT/MaxT temperature data and populates the SQLite database (`data.db`) under the `TemperatureForecasts` table.
 
-## Step 4: Launch Interactive Streamlit Web App
+## Step 4: Launch Interactive Full-Stack Web App
 
-1. Start the Streamlit application server:
+1. Start the FastAPI application server (which serves the frontend and APIs):
    // turbo
    ```bash
-   streamlit run app.py
+   python -m uvicorn main:app --host 0.0.0.0 --port 8000
    ```
-2. Open your browser at `http://localhost:8501`.
+2. Open your browser at `http://localhost:8000`.
 3. Interact with the application:
-   - Select regions (北部地區, 中部地區, 南部地區, etc.) to view 7-day temperature trends.
-   - Pick dates to view the Folium interactive map with temperature color scales.
+   - Experience zero-latency map rendering built with Leaflet.js and Vanilla JS.
+   - Use the floating control panels to switch data sources (Forecast, Station, AQI) and view immersive fullscreen weather data.
 
 ## Step 5: Version Control & GitHub Sync
 

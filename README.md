@@ -19,11 +19,12 @@
 
 * **數據來源**: 中央氣象署 CWA Open Data API (交通部中央氣象署)
 * **資料格式**: JSON / GeoJSON
-* **開發語言**: Python 3.10+
+* **開發語言**: Python 3.10+ & JavaScript (ES6+)
 * **數據處理**: Pandas, Requests
 * **資料庫**: SQLite 3
-* **Web 框架**: Streamlit
-* **地圖視覺化**: Folium / Streamlit-Folium
+* **後端框架**: FastAPI
+* **前端框架**: 原生 HTML / CSS / Vanilla JS
+* **地圖視覺化**: Leaflet.js
 * **版本控制**: Git / GitHub
 
 ---
@@ -38,9 +39,9 @@
 +-----------------------------------------------------------------------------------+
 |  [01-04] CWA API & 資料取得  -->  [05-07] JSON 解析與 Pandas 資料處理               |
 |                                                                                   |
-|  [08-10] SQLite 資料庫設計   -->  [11-16] Streamlit 互動 Web App 開發               |
+|  [08-10] SQLite 資料庫設計   -->  [11-16] FastAPI 與 Vanilla JS 全端開發      |
 |                                                                                   |
-|  [17-20] Folium 地圖視覺化   -->  [21-24] GitHub 部署、延伸應用與 AI 探索          |
+|  [17-20] Leaflet 地圖視覺化   -->  [21-24] 獨立部署、延伸應用與 AI 探索          |
 +-----------------------------------------------------------------------------------+
 ```
 
@@ -148,12 +149,12 @@ SELECT * FROM TemperatureForecasts WHERE regionName = '中部地區';
 
 ---
 
-### 🖥️ 階段四：Streamlit 互動 Web App 開發 (Steps 11–16)
+### 🖥️ 階段四：全端 Web App 開發 (Steps 11–16)
 
-#### Step 11: Streamlit 入門 (快速建立 Web App)
-* **安裝環境**：`pip install streamlit pandas folium streamlit-folium`
-* **基本結構**：建立 `app.py` 主程式。
-* **Hello World**：執行 `streamlit run app.py` 啟動前端開發伺服器。
+#### Step 11: FastAPI 入門 (建立非同步後端 API)
+* **安裝環境**：`pip install fastapi uvicorn pandas`
+* **基本結構**：建立 `main.py` 主程式，撰寫 `/api/forecast` 等資料路由。
+* **啟動伺服器**：執行 `uvicorn main:app --reload` 啟動後端 API 伺服器。
 
 #### Step 12: 從資料庫讀取資料 (使用 SQL 查詢)
 ```python
@@ -165,35 +166,24 @@ df = pd.read_sql_query("SELECT * FROM TemperatureForecasts", conn)
 conn.close()
 ```
 
-#### Step 13: 下拉選單選擇地區 (互動式操作)
-提供使用者動態選擇觀測區域（北部地區、中部地區、南部地區、東北部地區、東部地區、東南部地區）：
+#### Step 13: 前端介面設計 (HTML & CSS)
+提供使用者滿版 (Fullscreen) 的沉浸式體驗，並使用 CSS Glassmorphism 設計懸浮控制面板。
 
-```python
-import streamlit as st
+#### Step 14: 串接 API 獲取資料 (JavaScript Fetch)
+利用 Vanilla JS 的 `fetch()` 非同步請求 FastAPI 後端，取得最新的 JSON 資料格式。
 
-region = st.selectbox(
-    "Select Region",
-    ["北部地區", "中部地區", "南部地區", "東北部地區", "東部地區", "東南部地區"]
-)
-```
+#### Step 15: 動態生成介面元件 (DOM 操作)
+利用 JavaScript 動態生成下拉選單（如地區、時間區段），實現即時的 UI 狀態更新，達到 0 延遲切換。
 
-#### Step 14: 繪製折線圖 (一週最高與最低氣溫)
-利用 Streamlit 內建圖表或 Plotly / Matplotlib 繪製氣溫變化趨勢圖：
-* 🔴 **MaxT (最高氣溫)**
-* 🔵 **MinT (最低氣溫)**
-
-#### Step 15: 顯示資料表格 (清楚呈現一週資料)
-利用 `st.dataframe()` 或 `st.table()` 清晰展示日期、最低溫與最高溫資訊。
-
-#### Step 16: 整合 Web App 介面 (選地區看氣溫預報)
-打造整潔的 **Taiwan Weather Forecast Dashboard**，將地區選單、折線圖與數據明細卡片一體化呈現在單頁儀表板上。
+#### Step 16: 整合 Web App 介面 (全端連動)
+打造整潔的 **Taiwan Weather Forecast Dashboard**，完美整合 FastAPI (Backend) 與 Vanilla JS (Frontend)。
 
 ---
 
 ### 🗺️ 階段五：進階台灣地圖視覺化與品質優化 (Steps 17–20)
 
-#### Step 17: 進階：台灣地圖視覺化 (使用 Folium + Streamlit)
-使用 `folium` 在地圖上標示台灣各分區並套用氣溫色階（Color Scale）：
+#### Step 17: 進階：台灣地圖視覺化 (使用 Leaflet.js)
+使用 `Leaflet.js` 在地圖上即時繪製台灣各分區 GeoJSON，並套用動態氣溫色階（Color Scale）：
 
 * 🔵 **< 20°C**：藍色 (寒冷/舒適)
 * 🟢 **20 - 25°C**：綠色 (宜人)
@@ -245,6 +235,20 @@ git push -u origin main
 * 📊 強化資訊視覺化與 WebGL 渲染
 * 🤖 使用 AI 輔助開發 (AI-assisted coding with Cursor/Copilot/Gemini)
 * 💡 打造專屬於你的個人作品集！
+
+---
+
+## 🌟 最新更新紀錄 (Changelog)
+
+### 2026-09-26 UI/UX 大幅升級與地圖穩定性修復
+* **修復深色模式底圖 (Dark Mode Map Fix)**: 
+  因 CARTO 底圖 API 政策變更導致出現浮水印，全面改採原生 CSS 濾鏡 (`filter: invert`) 技術反轉 OpenStreetMap，達成 100% 免費、免 API Key 且高質感的深色地圖。
+* **面板視覺與排版優化 (Panel Layout Optimization)**:
+  * **區域詳細預報面板**: 放大至 1.4x 提升圖表與數據易讀性。加入智能「收合狀態 (Collapsed)」，收起時自動變形為小型膠囊狀並改為橫向排列，大幅釋放地圖可視空間。
+  * **全台即時摘要面板**: 放大至 1.15x，並重新計算幾何位置（對齊畫面右側中央 `top: 50%`，向上向下延展），徹底根除在小螢幕下與控制選單重疊遮擋的問題。
+* **客製化巨型縮放控制器 (Custom Giant Zoom Control)**:
+  * 移除原生微小的縮放按鈕，於左上角標題下方 (50px 處) 打造專屬的 2.5x 巨型縮放控制器。
+  * 整合毛玻璃 (Glassmorphism) 特效，並自動支援深淺色模式切換，大幅提升觸控與滑鼠操作體驗。
 
 ---
 
