@@ -672,16 +672,22 @@ body.dark-mode .popup-row.main-metric {
         border: 1px solid rgba(255,255,255,0.2) !important;
     }
 
-    /* Hide the summary panel on mobile to save space, let users rely on map markers */
+    /* Show the summary panel on mobile, scaled down and on the right */
     #summary-panel {
-        display: none !important;
+        display: flex !important;
+        top: 55% !important;
+        right: 10px !important;
+        width: 220px !important;
+        zoom: 0.65 !important; /* Scale down significantly */
     }
 
     #region-panel {
         bottom: 10px;
         left: 10px;
-        width: calc(100% - 20px);
-        max-height: 45vh;
+        width: 65%; /* Reduce width to leave space on the right */
+        max-width: 260px;
+        max-height: 35vh;
+        zoom: 0.8 !important; /* Make region panel smaller */
     }
     
     /* Shrink the large Leaflet Zoom Controls */
