@@ -12,7 +12,7 @@ const map = L.map('map', {
     zoomSnap: 0.1,
     zoomDelta: 0.15,
     wheelPxPerZoomLevel: 120
-}).setView([23.7, 120.9], 9);
+}).setView([23.7, 120.9], 8.2);
 
 let baseTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
