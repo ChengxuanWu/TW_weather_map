@@ -139,8 +139,8 @@ html {
 
 /* Custom Marker Styling - Transparent Circles */
 .marker-transparent-circle {
-    width: 88px;
-    height: 88px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: flex;
     flex-direction: column;
@@ -165,12 +165,12 @@ html {
 
 .marker-circle-val {
     font-weight: 800;
-    font-size: 2.2rem;
+    font-size: 1.1rem;
     line-height: 1.1;
 }
 
 .marker-circle-name {
-    font-size: 1.5rem;
+    font-size: 0.8rem;
     font-weight: 700;
     opacity: 0.95;
     margin-top: 2px;
@@ -231,7 +231,7 @@ body.dark-mode .leaflet-control-zoom a:hover {
 }
 
 .popup-title {
-    font-size: 2.2rem;
+    font-size: 1.2rem;
     font-weight: 800;
     margin-bottom: 8px;
     color: #0f172a;
@@ -243,7 +243,7 @@ body.dark-mode .leaflet-control-zoom a:hover {
     display: flex;
     justify-content: space-between;
     margin-bottom: 4px;
-    font-size: 1.8rem;
+    font-size: 0.95rem;
 }
 
 .popup-row span {
@@ -252,7 +252,7 @@ body.dark-mode .leaflet-control-zoom a:hover {
 }
 
 .popup-row.main-metric {
-    font-size: 2rem;
+    font-size: 1.1rem;
     font-weight: 700;
     margin-top: 8px;
     padding-top: 8px;
@@ -570,25 +570,25 @@ body.dark-mode .popup-row.main-metric {
 }
 
 @media screen and (max-width: 1200px) {
-    /* Medium screens */
-    .glass-panel { zoom: 1 !important; }
-    .control-switcher { min-width: 300px; zoom: 1 !important; }
-    .title-panel { zoom: 1 !important; }
-    #notification-panel { width: 80% !important; }
-    #region-panel { width: 300px; }
-    #summary-panel { width: 250px; }
-    .leaflet-control-zoom { transform: scale(1); }
+    /* Tablet screens (iPad) */
+    .glass-panel { zoom: 1 !important; padding: 0.8rem !important; }
+    .control-switcher { min-width: 280px; }
+    .title-panel { zoom: 0.9 !important; }
+    #notification-panel { width: 90% !important; }
+    #region-panel { width: 280px; }
+    #summary-panel { width: 240px; }
+    .leaflet-control-zoom { transform: scale(0.8); }
 }
 
 @media screen and (max-width: 768px) {
     /* Mobile Layout Reset */
     .glass-panel {
         zoom: 1 !important;
-        padding: 1rem !important;
+        padding: 0.6rem !important;
     }
     
     .title-panel {
-        zoom: 1.2 !important;
+        zoom: 0.8 !important;
         margin-top: 50px;
     }
     
@@ -605,13 +605,17 @@ body.dark-mode .popup-row.main-metric {
 
     #show-notif-btn {
         width: 70% !important;
-        font-size: 1.1rem !important;
+        font-size: 1rem !important;
         top: 10px !important;
         left: 45% !important; /* Make room for burger */
+        padding: 6px 16px !important;
     }
 
     #mobile-menu-btn {
         display: flex !important;
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 1.4rem !important;
     }
 
     /* Move the Leaflet top-right controls (the Control Switcher) into a sliding drawer */
@@ -670,34 +674,34 @@ body.dark-mode .popup-row.main-metric {
         bottom: 10px;
         left: 10px;
         width: calc(100% - 20px);
-        max-height: 40vh;
+        max-height: 45vh;
     }
     
     /* Shrink the large Leaflet Zoom Controls */
     .leaflet-control-zoom {
-        transform: scale(1.2);
+        transform: scale(0.7);
         margin-top: 80px !important;
         margin-left: 10px !important;
     }
 
     /* Shrink map markers and popups */
     .marker-transparent-circle {
-        width: 60px;
-        height: 60px;
+        width: 36px;
+        height: 36px;
     }
     .marker-circle-val {
-        font-size: 1.4rem;
+        font-size: 0.9rem;
     }
     .marker-circle-name {
-        font-size: 1rem;
+        font-size: 0.7rem;
     }
     
     .popup-title {
-        font-size: 1.4rem;
+        font-size: 1.1rem;
     }
     
     .popup-row {
-        font-size: 1rem;
+        font-size: 0.85rem;
     }
 }
 
