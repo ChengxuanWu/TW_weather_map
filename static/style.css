@@ -41,29 +41,29 @@ html {
 }
 
 .control-switcher h3 {
-    margin-bottom: 0.8rem;
-    font-size: 1.4rem;
+    margin-bottom: 0.6rem;
+    font-size: 1.2rem;
     font-weight: 800;
 }
 
 .control-group {
-    margin-bottom: 0.8rem;
+    margin-bottom: 0.6rem;
 }
 
 .control-group label {
     display: block;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     font-weight: 700;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.3rem;
     color: #1e293b;
 }
 
 .control-group select {
     width: 100%;
-    padding: 0.6rem;
+    padding: 0.4rem;
     border-radius: 6px;
     border: 1px solid rgba(255, 255, 255, 0.5);
-    font-size: 1rem;
+    font-size: 0.95rem;
     background: rgba(255, 255, 255, 0.4);
     outline: none;
     transition: background 0.2s;
@@ -376,11 +376,11 @@ body.dark-mode .leaflet-control-zoom a:hover {
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    zoom: 0.61;
+    zoom: 0.7;
 }
 
 .summary-title {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-weight: 800;
     margin-bottom: 1rem;
     color: #1e293b;
@@ -392,7 +392,7 @@ body.dark-mode .leaflet-control-zoom a:hover {
     display: flex;
     justify-content: space-between;
     margin-bottom: 0.8rem;
-    font-size: 1.05rem;
+    font-size: 1.15rem;
 }
 
 .summary-item span {
