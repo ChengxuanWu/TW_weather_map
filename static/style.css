@@ -32,11 +32,12 @@ html {
     border-radius: 12px !important;
     padding: 1.2rem !important;
     color: #0f172a !important;
+    zoom: 1.2;
 }
 
 /* Control Switcher */
 .control-switcher {
-    min-width: 400px;
+    min-width: 420px;
 }
 
 .control-switcher h3 {
@@ -78,6 +79,7 @@ html {
     text-align: left;
     margin-top: 1rem;
     margin-left: 1rem;
+    zoom: 1.5;
 }
 
 .title-panel h1 {
@@ -201,7 +203,7 @@ html {
 .leaflet-control-zoom {
     margin-top: 80px !important;
     margin-left: 1rem !important;
-    transform: scale(1.2);
+    transform: scale(1.4);
     transform-origin: center left;
     border: none !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
@@ -262,7 +264,7 @@ body.dark-mode .leaflet-control-zoom a:hover {
     position: absolute;
     bottom: 2rem;
     left: 2rem;
-    width: 350px;
+    width: 380px;
     z-index: 1000;
     transition: all 0.3s ease;
     max-height: 80vh;
@@ -370,7 +372,7 @@ body.dark-mode .leaflet-control-zoom a:hover {
     top: 65%;
     right: 2rem;
     transform: translateY(-50%);
-    width: 300px;
+    width: 330px;
     z-index: 1000;
     display: flex;
     flex-direction: column;
