@@ -687,8 +687,8 @@ async function initNotifications() {
         const contentDiv = document.getElementById('notif-content');
         
         if (json.status === 'success' && json.data.length > 0) {
-            panel.style.display = 'flex';
-            showBtn.style.display = 'none';
+            panel.style.display = 'none'; // Closed by default
+            showBtn.style.display = 'block';
             showBtn.innerHTML = `🚨 警特報 (${json.data.length}) 點擊展開`;
             showBtn.style.color = '#fca5a5'; // light red text
             
