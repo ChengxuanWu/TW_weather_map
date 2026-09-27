@@ -590,7 +590,7 @@ body.dark-mode .popup-row.main-metric {
     
     .title-panel {
         zoom: 0.8 !important;
-        margin-top: 50px;
+        margin-top: 90px !important; /* Moved lower to avoid overlapping with notifications */
     }
     
     .control-switcher {
