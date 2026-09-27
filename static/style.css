@@ -32,30 +32,28 @@ html {
     border-radius: 12px !important;
     padding: 1.2rem !important;
     color: #0f172a !important;
-    zoom: 2;
 }
 
 /* Control Switcher */
 .control-switcher {
-    min-width: 691px;
-    zoom: 1.6;
+    min-width: 400px;
 }
 
 .control-switcher h3 {
-    margin-bottom: 1.8rem;
-    font-size: 2.7rem;
+    margin-bottom: 1.2rem;
+    font-size: 1.5rem;
     font-weight: 800;
 }
 
 .control-group {
-    margin-bottom: 1.8rem;
+    margin-bottom: 1.2rem;
 }
 
 .control-group label {
     display: block;
-    font-size: 2rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    margin-bottom: 0.9rem;
+    margin-bottom: 0.5rem;
     color: #1e293b;
 }
 
@@ -80,11 +78,10 @@ html {
     text-align: left;
     margin-top: 1rem;
     margin-left: 1rem;
-    zoom: 2.4;
 }
 
 .title-panel h1 {
-    font-size: 2.5rem;
+    font-size: 1.5rem;
     font-weight: 800;
     margin-bottom: 0.5rem;
     line-height: 1.1;
@@ -202,9 +199,9 @@ html {
 
 /* Custom Zoom Control */
 .leaflet-control-zoom {
-    margin-top: 100px !important;
+    margin-top: 80px !important;
     margin-left: 1rem !important;
-    transform: scale(2.4);
+    transform: scale(1.2);
     transform-origin: center left;
     border: none !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
@@ -265,7 +262,7 @@ body.dark-mode .leaflet-control-zoom a:hover {
     position: absolute;
     bottom: 2rem;
     left: 2rem;
-    width: 480px;
+    width: 350px;
     z-index: 1000;
     transition: all 0.3s ease;
     max-height: 80vh;
@@ -373,7 +370,7 @@ body.dark-mode .leaflet-control-zoom a:hover {
     top: 65%;
     right: 2rem;
     transform: translateY(-50%);
-    width: 420px;
+    width: 300px;
     z-index: 1000;
     display: flex;
     flex-direction: column;
@@ -550,30 +547,35 @@ body.dark-mode .popup-row.main-metric {
    Responsive Web Design (RWD) Overrides
    ======================================================== */
 
+@media screen and (min-width: 1920px) {
+    /* 4K / Ultra-wide monitors scaling */
+    .glass-panel { zoom: 1.5 !important; }
+    .control-switcher { zoom: 1.5 !important; }
+    .title-panel { zoom: 1.8 !important; }
+    .leaflet-control-zoom { transform: scale(1.5); }
+    #region-panel { width: 450px; }
+    #summary-panel { width: 380px; }
+}
+
+@media screen and (min-width: 2500px) {
+    /* Massive displays */
+    .glass-panel { zoom: 2 !important; }
+    .control-switcher { zoom: 1.6 !important; min-width: 600px; }
+    .title-panel { zoom: 2.4 !important; }
+    .leaflet-control-zoom { transform: scale(2.4); }
+    #region-panel { width: 480px; }
+    #summary-panel { width: 420px; }
+}
+
 @media screen and (max-width: 1200px) {
-    /* Scale down the massive desktop zooms for medium screens */
-    .glass-panel {
-        zoom: 1.5 !important;
-    }
-    .control-switcher {
-        min-width: 100%;
-        zoom: 1.2 !important;
-    }
-    .title-panel {
-        zoom: 1.8 !important;
-    }
-    #notification-panel {
-        width: 80% !important;
-    }
-    #region-panel {
-        width: 400px;
-    }
-    #summary-panel {
-        width: 380px;
-    }
-    .leaflet-control-zoom {
-        transform: scale(1.8);
-    }
+    /* Medium screens */
+    .glass-panel { zoom: 1 !important; }
+    .control-switcher { min-width: 300px; zoom: 1 !important; }
+    .title-panel { zoom: 1 !important; }
+    #notification-panel { width: 80% !important; }
+    #region-panel { width: 300px; }
+    #summary-panel { width: 250px; }
+    .leaflet-control-zoom { transform: scale(1); }
 }
 
 @media screen and (max-width: 768px) {
