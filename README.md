@@ -11,6 +11,10 @@
 
 ## 📌 專案簡介 (Project Overview)
 
+### Light Mode & Dark Mode UI
+![Light Mode Demo](docs/light_mode.png)
+![Dark Mode Demo](docs/dark_mode.png)
+
 本專案為 **AI 創新微課程：Taiwan Weather Forecast** 實作成果。課程引導開發者從中央氣象署（CWA）Open Data 平台獲取台灣即時與預報氣象資料，透過 **Python** 解析 JSON、儲存至 **SQLite** 資料庫，並利用 **Streamlit** 與 **Folium** 打造具備互動式折線圖、氣溫資料表與台灣地圖視覺化的全功能天氣預報 Web App Dashboard。
 
 ---
