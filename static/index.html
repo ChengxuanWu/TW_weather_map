@@ -7,11 +7,14 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
-    <link rel="stylesheet" href="/static/style.css?v=26">
+    <link rel="stylesheet" href="/static/style.css?v=43">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;800&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="map"></div>
+    
+    <!-- Mobile Hamburger Button -->
+    <button id="mobile-menu-btn" class="glass-panel" style="display: none; position: absolute; top: 10px; right: 10px; z-index: 2000; width: 50px; height: 50px; font-size: 1.8rem; cursor: pointer; align-items: center; justify-content: center; padding: 0;">☰</button>
     
     <!-- Summary Panel (Middle Right) -->
     <div id="summary-panel" class="glass-panel">
@@ -20,6 +23,21 @@
             <!-- Populated by JS -->
         </div>
         <button id="summary-reset-btn" class="summary-reset-btn" style="display:none;">🔙 返回全台摘要</button>
+    </div>
+    
+    <button id="show-notif-btn" class="glass-panel" style="display:block; position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; padding: 10px 30px; font-size: 1.4rem; cursor: pointer; color: #ffffff; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.3); border-radius: 30px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        🚨 讀取警特報中...
+    </button>
+    
+    <!-- Notifications Panel -->
+    <div id="notification-panel" class="glass-panel" style="display: none; position: absolute; top: 80px; left: 50%; transform: translateX(-50%); width: 600px; z-index: 1000; flex-direction: column;">
+        <div class="panel-header" style="justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 1.6rem; color: #dc2626;">🚨 最新警特報與提醒</h3>
+            <button id="toggle-notif-btn" class="icon-btn" title="關閉/隱藏通知" style="background:none; border:none; font-size: 1.8rem; cursor:pointer;">✖</button>
+        </div>
+        <div id="notif-content" style="max-height: 250px; overflow-y: auto; margin-top: 10px;">
+            <!-- Dynamic alerts go here -->
+        </div>
     </div>
     
     <!-- Region Details Panel -->
@@ -62,6 +80,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="/static/app.js?v=26"></script>
+    <script src="/static/app.js?v=44"></script>
 </body>
 </html>

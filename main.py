@@ -4,6 +4,8 @@ from fastapi.responses import HTMLResponse
 import json
 import pandas as pd
 import os
+import httpx
+import re
 
 from utils.db_manager import DBManager
 from utils.moenv_api import MOENVApiClient
@@ -114,3 +116,85 @@ def sync_data():
         return {"status": "success", "message": "Data synchronized"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@app.get("/api/notifications")
+async def get_notifications():
+    notifications = []
+    
+    # 1. Fetch CWA Warnings
+    try:
+        async with httpx.AsyncClient(verify=False) as client:
+            res = await client.get("https://www.cwa.gov.tw/Data/js/warn/Warning_Content.js")
+            text = res.text
+            
+            # W29 High Temp
+            w29_match = re.search(r"'W29'\s*:\s*\{\s*'C'\s*:\s*\{[^\}]*'content'\s*:\s*'([^']+)'", text)
+            if w29_match:
+                content = w29_match.group(1).replace('\\n', ' ').strip()
+                if content:
+                    summary = (content[:80] + '...') if len(content) > 80 else content
+                    notifications.append({"type": "高溫資訊", "summary": summary, "url": "https://www.cwa.gov.tw/V8/C/P/Warning/W29.html"})
+                    
+            # W33 Heavy Rain
+            w33_match = re.search(r"'W33'\s*:\s*\{\s*'C'\s*:\s*\{[^\}]*'content'\s*:\s*'([^']+)'", text)
+            if w33_match:
+                content = w33_match.group(1).replace('\\n', ' ').strip()
+                if content:
+                    summary = (content[:80] + '...') if len(content) > 80 else content
+                    notifications.append({"type": "大雷雨即時訊息", "summary": summary, "url": "https://www.cwa.gov.tw/V8/C/P/Warning/W33.html"})
+            
+            # TY_WARN Typhoon
+            ty_match = re.search(r"'TY_WARN'\s*:\s*\{\s*'C'\s*:\s*\{[^\}]*'content'\s*:\s*'([^']+)'", text)
+            if ty_match:
+                content = ty_match.group(1).replace('\\n', ' ').strip()
+                if content:
+                    summary = (content[:80] + '...') if len(content) > 80 else content
+                    notifications.append({"type": "颱風警報", "summary": summary, "url": "https://www.cwa.gov.tw/V8/C/P/Typhoon/TY_WARN.html"})
+
+    except Exception as e:
+        print("CWA API Error:", e)
+
+    # 2. Fetch AirTW News using AQI data from database
+    try:
+        from utils.db_manager import DBManager
+        db = DBManager(db_path="data.db")
+        df_aqi = db.get_latest_aqi_observations()
+        if not df_aqi.empty:
+            df_aqi['aqi'] = pd.to_numeric(df_aqi['aqi'], errors='coerce')
+            bad_air = df_aqi[df_aqi['aqi'] > 100]
+            if not bad_air.empty:
+                max_row = bad_air.loc[bad_air['aqi'].idxmax()]
+                count = len(bad_air)
+                summary = f"全台有 {count} 個測站空氣品質達不健康等級 (最高為 {max_row['sitename']} AQI:{int(max_row['aqi'])})，請敏感族群注意防護。"
+                notifications.append({"type": "空氣品質警告", "summary": summary, "url": "https://airtw.moenv.gov.tw/CHT/News.aspx"})
+    except Exception as e:
+        print("AirTW DB Error:", e)
+        
+    # 3. Fetch Typhoon Open Data (W-C0034-005)
+    try:
+        from utils.cwa_api import CWAApiClient
+        cwa_client = CWAApiClient()
+        ty_data = cwa_client.fetch_dataset("W-C0034-005")
+        if ty_data:
+            records = ty_data.get('records', {})
+            tropical_cyclones = records.get('TropicalCyclones', {}).get('TropicalCyclone', [])
+            for tc in tropical_cyclones:
+                name = tc.get('TyphoonName', 'Unknown')
+                analysis = tc.get('AnalysisData', {}).get('Fix', [])
+                if analysis:
+                    latest = analysis[-1]
+                    speed = latest.get('MaxWindSpeed', '未知')
+                    direction = latest.get('MovingDirection', '未知')
+                    summary = f"颱風 {name} 最新動態：目前最大風速 {speed} m/s，正向 {direction} 移動中，請持續關注氣象署最新颱風消息。"
+                    # Only append if we haven't already added a typhoon warning
+                    if not any(n["type"] in ["颱風消息", "颱風警報"] for n in notifications):
+                        notifications.append({
+                            "type": "颱風消息",
+                            "summary": summary,
+                            "url": "https://www.cwa.gov.tw/V8/C/P/Typhoon/TY_WARN.html"
+                        })
+    except Exception as e:
+        print("Typhoon Open Data API Error:", e)
+
+    return {"status": "success", "data": notifications}
+

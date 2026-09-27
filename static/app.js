@@ -25,11 +25,11 @@ let baseTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 
 // 1. Title Panel (Top Left)
 const titleControl = L.control({ position: 'topleft' });
-titleControl.onAdd = function() {
+titleControl.onAdd = function () {
     const div = L.DomUtil.create('div', 'glass-panel title-panel');
     div.innerHTML = `
         <h1>探索台灣氣象</h1>
-        <p>精準觀測 · 即時預警 · 智慧數據</p>
+        <p> 天氣預報|空氣品質|即時資訊 </p>
     `;
     return div;
 };
@@ -39,24 +39,20 @@ titleControl.addTo(map);
 const switcherControl = L.control({ position: 'topright' });
 let dataSourceSelect, displayModeGroup, displayModeSelect, forecastSlotGroup, forecastSlotSelect;
 
-switcherControl.onAdd = function() {
+switcherControl.onAdd = function () {
     const div = L.DomUtil.create('div', 'glass-panel control-switcher');
-    
+
     // Stop click events from propagating to the map
     L.DomEvent.disableClickPropagation(div);
     L.DomEvent.disableScrollPropagation(div);
 
     div.innerHTML = `
-        <h3>🎛️ 資料與地圖控制</h3>
-        <div class="control-group">
-            <button id="dark-mode-btn" style="width: 100%; padding: 1.5rem; font-size: 2.2rem; background: #334155; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 800; transition: background 0.2s;">
-                🌙 切換深色模式
-            </button>
-        </div>
-        <div class="control-group">
-            <button id="sync-btn" style="width: 100%; padding: 1.5rem; font-size: 2.2rem; background: #2563eb; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 800; transition: background 0.2s;">
-                🔄 立即同步最新資料
-            </button>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+            <h3 style="margin: 0;">🎛️ 資料與地圖控制</h3>
+            <div style="display: flex; gap: 8px;">
+                <button id="dark-mode-btn" style="width: 48px; height: 48px; font-size: 1.5rem; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" title="切換深色模式">🌙</button>
+                <button id="sync-btn" style="width: 48px; height: 48px; font-size: 1.5rem; background: #2563eb; color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" title="同步資料">🔄</button>
+            </div>
         </div>
         <div class="control-group">
             <label>📊 地圖資料來源</label>
@@ -75,48 +71,48 @@ switcherControl.onAdd = function() {
             <select id="forecast-slot-select"></select>
         </div>
     `;
-    
+
     // Add Sync Button Listener after a short delay so it's in DOM
     setTimeout(() => {
         const syncBtn = document.getElementById('sync-btn');
-        if(syncBtn) {
+        if (syncBtn) {
             syncBtn.addEventListener('click', async () => {
                 syncBtn.innerHTML = "⏳ 同步中...";
                 syncBtn.disabled = true;
                 try {
                     const res = await fetch('/api/sync', { method: 'POST' });
                     if (res.ok) {
-                        syncBtn.innerHTML = "✅ 同步成功";
-                        await loadAllData(); 
+                        syncBtn.innerHTML = "✅";
+                        await loadAllData();
                         renderMap();
-                        setTimeout(() => { syncBtn.innerHTML = "🔄 立即同步最新資料"; syncBtn.disabled = false; }, 3000);
+                        setTimeout(() => { syncBtn.innerHTML = "🔄"; syncBtn.disabled = false; }, 3000);
                     } else {
                         throw new Error("Sync failed");
                     }
                 } catch (e) {
-                    syncBtn.innerHTML = "❌ 同步失敗";
-                    setTimeout(() => { syncBtn.innerHTML = "🔄 立即同步最新資料"; syncBtn.disabled = false; }, 3000);
+                    syncBtn.innerHTML = "❌";
+                    setTimeout(() => { syncBtn.innerHTML = "🔄"; syncBtn.disabled = false; }, 3000);
                 }
             });
         }
-        
+
         const darkBtn = document.getElementById('dark-mode-btn');
         if (darkBtn) {
             darkBtn.addEventListener('click', () => {
                 document.body.classList.toggle('dark-mode');
                 const isDark = document.body.classList.contains('dark-mode');
-                darkBtn.innerHTML = isDark ? "☀️ 切換淺色模式" : "🌙 切換深色模式";
+                darkBtn.innerHTML = isDark ? "☀️" : "🌙";
                 darkBtn.style.background = isDark ? "#f59e0b" : "#334155";
-                darkBtn.style.color = isDark ? "#fff" : "#fff";
-                
+                darkBtn.style.color = "#fff";
+
                 // If using Chart.js, you might want to re-render it if the colors are unreadable,
                 // but setting grid colors or text colors via CSS often isn't enough for Canvas.
                 // We'll let Chart.js default colors handle it for now or re-render if needed.
-                if(window.tempChartObj) window.tempChartObj.update();
+                if (window.tempChartObj) window.tempChartObj.update();
             });
         }
     }, 100);
-    
+
     return div;
 };
 switcherControl.addTo(map);
@@ -130,7 +126,7 @@ forecastSlotSelect = document.getElementById('forecast-slot-select');
 
 // 3. Legend Panel (Bottom Right)
 const legendControl = L.control({ position: 'bottomright' });
-legendControl.onAdd = function() {
+legendControl.onAdd = function () {
     const div = L.DomUtil.create('div', 'glass-panel legend-panel');
     div.id = 'legend-container';
     return div;
@@ -182,10 +178,16 @@ async function loadAllData() {
         ]);
         geojsonData = await geoRes.json();
         stationData = await stnRes.json();
-        forecastData = await fcstRes.json();
-        aqiData = await aqiRes.json();
         
+        const rawForecastData = await fcstRes.json();
+        const now = new Date();
+        const todayStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0');
+        forecastData = rawForecastData.filter(d => d.dataDate && d.dataDate.substring(0, 10) >= todayStr);
+        
+        aqiData = await aqiRes.json();
+
         updateUIState();
+        initNotifications();
         // renderMap() will be called in the .then() block after currentLayerGroup is ready
     } catch (e) {
         console.error("Failed to load data:", e);
@@ -195,7 +197,7 @@ async function loadAllData() {
 function updateUIState() {
     const source = dataSourceSelect.value;
     displayModeSelect.innerHTML = '';
-    
+
     if (source === 'forecast') {
         forecastSlotGroup.style.display = 'block';
         displayModeSelect.innerHTML = `
@@ -223,7 +225,7 @@ function updateUIState() {
 function updateLegend() {
     const mode = displayModeSelect.value;
     let html = '';
-    
+
     if (mode.includes('temp')) {
         html = `
             <div class="legend-title">氣溫色階 (°C)</div>
@@ -261,16 +263,16 @@ function renderMap() {
     if (geojsonLayer) {
         map.removeLayer(geojsonLayer);
     }
-    
+
     // Always render Choropleth as background layer
     renderChoropleth();
-    
+
     const source = dataSourceSelect.value;
     // Only render markers for Station or AQI data
     if (source !== 'forecast') {
         renderMarkers();
     }
-    
+
     updateMarkerSizes();
     updateLegend();
     updateSummaryPanel(null);
@@ -280,11 +282,11 @@ function updateSummaryPanel(countyName = null) {
     const titleEl = document.getElementById('summary-title');
     const contentEl = document.getElementById('summary-content');
     const resetBtn = document.getElementById('summary-reset-btn');
-    
+
     let targetData = [];
     let titleStr = "🌍 全台即時摘要";
     const source = dataSourceSelect.value;
-    
+
     if (source === 'forecast') {
         const slot = forecastSlotSelect.value;
         let data = forecastData.filter(d => d.dataDate === slot);
@@ -308,31 +310,31 @@ function updateSummaryPanel(countyName = null) {
         }
         targetData = data;
     }
-    
+
     titleEl.innerText = titleStr;
     resetBtn.style.display = countyName ? 'block' : 'none';
-    
+
     if (targetData.length === 0) {
         contentEl.innerHTML = `<div class="summary-item"><span>無資料</span></div>`;
         return;
     }
-    
+
     let html = '';
     if (source === 'forecast') {
-        const minTs = targetData.map(d => d.minT).filter(v => v!=null);
-        const maxTs = targetData.map(d => d.maxT).filter(v => v!=null);
+        const minTs = targetData.map(d => d.minT).filter(v => v != null);
+        const maxTs = targetData.map(d => d.maxT).filter(v => v != null);
         const pops = targetData.map(d => d.pop_num).filter(v => !isNaN(v));
-        
+
         let avgT = 0, highT = "-", lowT = "-", maxPop = "-";
         if (minTs.length && maxTs.length) {
             highT = Math.max(...maxTs) + " °C";
             lowT = Math.min(...minTs) + " °C";
             let sum = 0;
-            targetData.forEach(d => { if(d.avgT) sum += d.avgT; });
+            targetData.forEach(d => { if (d.avgT) sum += d.avgT; });
             avgT = (sum / targetData.filter(d => d.avgT).length).toFixed(1) + " °C";
         }
         if (pops.length) maxPop = Math.max(...pops) + " %";
-        
+
         html = `
             <div class="summary-item"><span>最高溫</span><strong>${highT}</strong></div>
             <div class="summary-item"><span>最低溫</span><strong>${lowT}</strong></div>
@@ -340,17 +342,17 @@ function updateSummaryPanel(countyName = null) {
             <div class="summary-item"><span>最高降雨機率</span><strong>${maxPop}</strong></div>
         `;
     } else if (source === 'station') {
-        const temps = targetData.map(d => d.temp).filter(v => v!=null && !isNaN(v));
-        const precips = targetData.map(d => d.precipitation).filter(v => v!=null && !isNaN(v));
-        
+        const temps = targetData.map(d => d.temp).filter(v => v != null && !isNaN(v));
+        const precips = targetData.map(d => d.precipitation).filter(v => v != null && !isNaN(v));
+
         let highT = "-", lowT = "-", avgT = "-", maxP = "-";
         if (temps.length) {
             highT = Math.max(...temps).toFixed(1) + " °C";
             lowT = Math.min(...temps).toFixed(1) + " °C";
-            avgT = (temps.reduce((a,b)=>a+b,0) / temps.length).toFixed(1) + " °C";
+            avgT = (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(1) + " °C";
         }
         if (precips.length) maxP = Math.max(...precips).toFixed(1) + " mm";
-        
+
         html = `
             <div class="summary-item"><span>最高溫</span><strong>${highT}</strong></div>
             <div class="summary-item"><span>最低溫</span><strong>${lowT}</strong></div>
@@ -359,19 +361,19 @@ function updateSummaryPanel(countyName = null) {
             <div class="summary-item"><span>測站總數</span><strong>${targetData.length} 站</strong></div>
         `;
     } else if (source === 'aqi') {
-        const aqis = targetData.map(d => d.aqi).filter(v => v!=null && !isNaN(v));
-        const pm25s = targetData.map(d => d.pm25).filter(v => v!=null && !isNaN(v));
-        
+        const aqis = targetData.map(d => d.aqi).filter(v => v != null && !isNaN(v));
+        const pm25s = targetData.map(d => d.pm25).filter(v => v != null && !isNaN(v));
+
         let maxA = "-", avgA = "-", maxP = "-", avgP = "-";
         if (aqis.length) {
             maxA = Math.max(...aqis);
-            avgA = (aqis.reduce((a,b)=>a+b,0) / aqis.length).toFixed(1);
+            avgA = (aqis.reduce((a, b) => a + b, 0) / aqis.length).toFixed(1);
         }
         if (pm25s.length) {
             maxP = Math.max(...pm25s);
-            avgP = (pm25s.reduce((a,b)=>a+b,0) / pm25s.length).toFixed(1);
+            avgP = (pm25s.reduce((a, b) => a + b, 0) / pm25s.length).toFixed(1);
         }
-        
+
         html = `
             <div class="summary-item"><span>最高 AQI</span><strong>${maxA}</strong></div>
             <div class="summary-item"><span>平均 AQI</span><strong>${avgA}</strong></div>
@@ -390,8 +392,8 @@ function renderChoropleth() {
     if (source === 'forecast') {
         const slot = forecastSlotSelect.value;
         const slotData = forecastData.filter(d => d.dataDate === slot);
-        slotData.forEach(d => { 
-            dataMap[d.regionName || d.locationName] = { val: mode === 'temp' ? d.avgT : d.pop_num, row: d }; 
+        slotData.forEach(d => {
+            dataMap[d.regionName || d.locationName] = { val: mode === 'temp' ? d.avgT : d.pop_num, row: d };
         });
     } else if (source === 'station') {
         const countyGroups = {};
@@ -403,7 +405,7 @@ function renderChoropleth() {
         for (let c in countyGroups) {
             const vals = countyGroups[c].filter(v => v != null && !isNaN(v));
             if (vals.length > 0) {
-                const avg = vals.reduce((a,b)=>a+b, 0) / vals.length;
+                const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
                 dataMap[c] = { val: avg, row: null };
             }
         }
@@ -417,12 +419,12 @@ function renderChoropleth() {
         for (let c in countyGroups) {
             const vals = countyGroups[c].filter(v => v != null && !isNaN(v));
             if (vals.length > 0) {
-                const avg = vals.reduce((a,b)=>a+b, 0) / vals.length;
+                const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
                 dataMap[c] = { val: avg, row: null };
             }
         }
     }
-    
+
     geojsonLayer = L.geoJSON(geojsonData, {
         style: function (feature) {
             let countyName = feature.properties.COUNTYNAME.replace(/台/g, '臺');
@@ -441,16 +443,16 @@ function renderChoropleth() {
             let countyName = feature.properties.COUNTYNAME.replace(/台/g, '臺');
             if (countyName === "桃園縣") countyName = "桃園市";
             const data = dataMap[countyName];
-            
+
             // Render center marker for forecast data
             if (data != null && source === 'forecast') {
                 let displayVal = (typeof data.val === 'number') ? data.val.toFixed(1) : data.val;
                 if (mode === 'pop') displayVal += '%';
-                
+
                 let color = "#cbd5e1";
                 if (mode === 'temp') color = getTempColor(data.val);
                 else if (mode === 'pop') color = getRainColor(data.val);
-                
+
                 // Use turf or layer bounds center
                 const center = layer.getBounds().getCenter();
                 const bgColor = color + 'B3'; // 70% opacity hex
@@ -461,7 +463,7 @@ function renderChoropleth() {
                     </div>
                 `;
                 const icon = L.divIcon({ html: html, className: 'custom-div-icon', iconSize: [0, 0] });
-                L.marker(center, {icon: icon, interactive: false}).addTo(currentLayerGroup);
+                L.marker(center, { icon: icon, interactive: false }).addTo(currentLayerGroup);
             }
 
             let popupContent = `<div class="popup-title">${countyName}</div>`;
@@ -492,14 +494,14 @@ function renderMarkers() {
     const source = dataSourceSelect.value;
     const mode = displayModeSelect.value;
     let activeData = source === 'station' ? stationData : aqiData;
-    
+
     activeData.forEach(row => {
         let lat = row.lat || row.latitude;
         let lng = row.lng || row.longitude;
         if (!lat || !lng) return;
-        
+
         let valStr = "-", color = "#94a3b8", title = row.stationName || row.sitename;
-        
+
         if (source === 'station') {
             if (mode === 'temp') {
                 valStr = row.temp !== null ? row.temp.toFixed(1) : "-";
@@ -517,14 +519,14 @@ function renderMarkers() {
                 color = getAqiColor(row.aqi);
             }
         }
-        
+
         const bgColor = color + 'B3'; // 70% opacity
         const html = `
             <div class="marker-transparent-circle" style="background-color: ${bgColor}; border-color: ${color};">
                 <span class="marker-circle-val">${valStr}</span>
                 <span class="marker-circle-name">${title}</span>
             </div>`;
-            
+
         const icon = L.divIcon({ html: html, className: 'custom-div-icon', iconSize: [0, 0] });
         let popupContent = `<div class="popup-title">${title}</div>`;
         if (source === 'station') {
@@ -539,9 +541,9 @@ function renderMarkers() {
                 <div class="popup-row"><span>PM2.5:</span> <strong>${row.pm25} μg/m3</strong></div>
             `;
         }
-        L.marker([lat, lng], {icon: icon}).bindPopup(popupContent).addTo(currentLayerGroup);
+        L.marker([lat, lng], { icon: icon }).bindPopup(popupContent).addTo(currentLayerGroup);
     });
-    
+
     updateMarkerSizes();
 }
 
@@ -559,7 +561,7 @@ function updateMarkerSizes() {
     document.querySelectorAll('.marker-transparent-circle').forEach(el => {
         el.style.transform = `translate(-50%, -50%) scale(${scale})`;
     });
-    
+
     // Scale the popups dynamically too
     document.documentElement.style.setProperty('--popup-scale', scale);
 }
@@ -578,14 +580,20 @@ togglePanelBtn.addEventListener('click', () => {
 
 function initRegionPanel() {
     if (!forecastData || forecastData.length === 0) return;
-    
+
     // Populate region select (unique locations)
     const locations = [...new Set(forecastData.map(d => d.locationName || d.regionName))].filter(Boolean).sort();
     regionSelect.innerHTML = locations.map(l => `<option value="${l}">${l}</option>`).join('');
-    
+
     // Initial Render
     if (locations.length > 0) {
         updateRegionDetails(locations[0]);
+    }
+    
+    // Auto-collapse on mobile devices
+    if (window.innerWidth <= 768) {
+        regionPanel.classList.add('collapsed');
+        togglePanelBtn.innerText = '▲';
     }
 }
 
@@ -595,16 +603,16 @@ regionSelect.addEventListener('change', (e) => {
 
 function updateRegionDetails(location) {
     const locData = forecastData.filter(d => (d.locationName || d.regionName) === location).sort((a, b) => a.dataDate.localeCompare(b.dataDate));
-    
+
     if (locData.length === 0) return;
 
     // Update Table
     dataTableBody.innerHTML = locData.map(d => `
-        <tr>
-            <td>${d.dataDate.substring(5, 16)}</td>
-            <td style="color:#2563eb; font-weight:bold;">${d.minT}°C</td>
-            <td style="color:#dc2626; font-weight:bold;">${d.maxT}°C</td>
-            <td>${d.pop_num}%</td>
+        <tr title="時間: ${d.dataDate.substring(5, 16)}\n最低溫: ${d.minT}°C\n最高溫: ${d.maxT}°C\n降雨機率: ${d.pop_num}%">
+            <td style="font-weight:600;">${d.dataDate.substring(5, 16)}</td>
+            <td style="color:#2563eb; font-weight:900; font-size:1.15em;">${d.minT}°C</td>
+            <td style="color:#dc2626; font-weight:900; font-size:1.15em;">${d.maxT}°C</td>
+            <td style="font-weight:700; font-size:1.05em;">${d.pop_num}%</td>
         </tr>
     `).join('');
 
@@ -616,7 +624,7 @@ function updateRegionDetails(location) {
     if (tempChart) {
         tempChart.destroy();
     }
-    
+
     const ctx = document.getElementById('tempChart').getContext('2d');
     tempChart = new Chart(ctx, {
         type: 'line',
@@ -644,22 +652,23 @@ function updateRegionDetails(location) {
             ]
         },
         options: {
+            devicePixelRatio: Math.max(window.devicePixelRatio || 1, 4), // Force high internal resolution to counter CSS zoom
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'top', labels: { font: { size: 18 } } }
+                legend: { position: 'top', labels: { font: { size: 22 } } }
             },
             scales: {
-                x: { ticks: { font: { size: 16 } } },
-                y: { ticks: { font: { size: 16 } } }
+                x: { ticks: { font: { size: 20 } } },
+                y: { ticks: { font: { size: 20 } } }
             }
         }
     });
 }
 
 // --- Event Listeners ---
-dataSourceSelect.addEventListener('change', () => { 
-    updateUIState(); 
+dataSourceSelect.addEventListener('change', () => {
+    updateUIState();
     renderMap();
     if (dataSourceSelect.value === 'forecast') {
         regionPanel.style.display = 'flex';
@@ -667,6 +676,57 @@ dataSourceSelect.addEventListener('change', () => {
         regionPanel.style.display = 'none';
     }
 });
+
+// --- Notifications ---
+async function initNotifications() {
+    try {
+        const res = await fetch('/api/notifications');
+        const json = await res.json();
+        const panel = document.getElementById('notification-panel');
+        const showBtn = document.getElementById('show-notif-btn');
+        const contentDiv = document.getElementById('notif-content');
+        
+        if (json.status === 'success' && json.data.length > 0) {
+            panel.style.display = 'flex';
+            showBtn.style.display = 'none';
+            showBtn.innerHTML = `🚨 警特報 (${json.data.length}) 點擊展開`;
+            showBtn.style.color = '#fca5a5'; // light red text
+            
+            let html = '';
+            json.data.forEach(item => {
+                const isAir = item.type.includes('空氣');
+                html += `
+                    <div class="notif-item ${isAir ? 'notif-air' : ''}">
+                        <strong>${item.type}</strong><br/>
+                        ${item.summary}
+                        <a href="${item.url}" target="_blank">查看詳情 ➔</a>
+                    </div>
+                `;
+            });
+            contentDiv.innerHTML = html;
+        } else {
+            panel.style.display = 'none';
+            showBtn.style.display = 'block';
+            showBtn.innerHTML = `✅ 目前無最新警特報`;
+            showBtn.style.color = '#6ee7b7'; // light green
+            contentDiv.innerHTML = '<div style="padding:10px; color:#333;">目前沒有任何災防警告。</div>';
+        }
+        
+        // Toggle Logic
+        document.getElementById('toggle-notif-btn').addEventListener('click', () => {
+            panel.style.display = 'none';
+            showBtn.style.display = 'block';
+        });
+        showBtn.addEventListener('click', () => {
+            panel.style.display = 'flex';
+            showBtn.style.display = 'none';
+        });
+        
+    } catch (e) {
+        console.error('Failed to load notifications:', e);
+    }
+}
+
 displayModeSelect.addEventListener('change', renderMap);
 forecastSlotSelect.addEventListener('change', renderMap);
 map.on('zoomend', updateMarkerSizes);
@@ -684,11 +744,26 @@ loadAllData().then(() => {
         maxClusterRadius: 50
     }).addTo(map);
     initRegionPanel();
-    
+
     // Add custom positioned zoom control
     L.control.zoom({ position: 'topleft' }).addTo(map);
-    
-    
+
+    // Mobile Hamburger Menu Toggle
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.body.classList.toggle('menu-open');
+        });
+        
+        // Close menu when clicking on map
+        map.on('click', () => {
+            if (document.body.classList.contains('menu-open')) {
+                document.body.classList.remove('menu-open');
+            }
+        });
+    }
+
     // We must call renderMap manually here to actually paint the markers because 
     // it was called in loadAllData() before currentLayerGroup was ready!
     renderMap();
