@@ -672,22 +672,21 @@ body.dark-mode .popup-row.main-metric {
         border: 1px solid rgba(255,255,255,0.2) !important;
     }
 
-    /* Show the summary panel on mobile, scaled down and on the right */
+    /* Show the summary panel on mobile, moved to bottom left */
     #summary-panel {
         display: flex !important;
-        top: 55% !important;
-        right: 10px !important;
+        top: auto !important;
+        bottom: 15px !important;
+        left: 10px !important;
+        right: auto !important;
+        transform: none !important; /* Override desktop's translateY */
         width: 220px !important;
-        zoom: 0.65 !important; /* Scale down significantly */
+        zoom: 0.8 !important; /* Scale appropriately for bottom-left */
     }
 
+    /* Hide the region panel on mobile to keep the interface simple */
     #region-panel {
-        bottom: 10px;
-        left: 10px;
-        width: 65%; /* Reduce width to leave space on the right */
-        max-width: 260px;
-        max-height: 35vh;
-        zoom: 0.8 !important; /* Make region panel smaller */
+        display: none !important;
     }
     
     /* Shrink the large Leaflet Zoom Controls */
