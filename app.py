@@ -77,7 +77,7 @@ st.markdown("""
     }
     
     .hero-title {
-        font-size: 12rem;
+        font-size: 10rem;
         font-weight: 800;
         text-shadow: 0 4px 20px rgba(0,0,0,0.5);
         margin-bottom: 1rem;

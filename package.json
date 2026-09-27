@@ -1,0 +1,12 @@
+{
+  "name": "tw-weather-map",
+  "version": "1.0.0",
+  "description": "Taiwan Weather Forecast web app",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "type": "module"
+}
