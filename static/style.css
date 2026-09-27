@@ -600,16 +600,22 @@ body.dark-mode .popup-row.main-metric {
     }
 
     #notification-panel {
-        width: 95% !important;
+        width: 90% !important;
         top: 60px !important;
+        zoom: 0.8 !important; /* Make notification panel smaller */
     }
 
     #show-notif-btn {
-        width: 70% !important;
-        font-size: 1rem !important;
+        width: 65% !important;
+        font-size: 0.85rem !important;
         top: 10px !important;
         left: 45% !important; /* Make room for burger */
-        padding: 6px 16px !important;
+        padding: 6px 12px !important;
+    }
+
+    .legend-panel {
+        min-width: 150px !important;
+        zoom: 0.75 !important; /* Make legend smaller */
     }
 
     #mobile-menu-btn {
