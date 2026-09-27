@@ -485,6 +485,25 @@ function renderChoropleth() {
                 // We can also open the popup right after flying
                 setTimeout(() => layer.openPopup(), 1000);
                 updateSummaryPanel(countyName);
+                
+                // Sync the Region Details Panel
+                const regionSelect = document.getElementById('region-select');
+                if (regionSelect) {
+                    const options = Array.from(regionSelect.options);
+                    const match = options.find(opt => opt.value === countyName || opt.value.includes(countyName) || countyName.includes(opt.value));
+                    if (match) {
+                        regionSelect.value = match.value;
+                        updateRegionDetails(match.value);
+                        
+                        // Open the panel if it is collapsed
+                        const regionPanel = document.getElementById('region-panel');
+                        const toggleBtn = document.getElementById('toggle-panel-btn');
+                        if (regionPanel && regionPanel.classList.contains('collapsed')) {
+                            regionPanel.classList.remove('collapsed');
+                            if (toggleBtn) toggleBtn.innerText = '▼';
+                        }
+                    }
+                }
             });
         }
     }).addTo(map);
