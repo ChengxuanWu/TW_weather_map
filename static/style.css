@@ -376,11 +376,11 @@ body.dark-mode .leaflet-control-zoom a:hover {
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    zoom: 0.68;
+    zoom: 0.61;
 }
 
 .summary-title {
-    font-size: 1.8rem;
+    font-size: 1.4rem;
     font-weight: 800;
     margin-bottom: 1rem;
     color: #1e293b;
@@ -392,7 +392,7 @@ body.dark-mode .leaflet-control-zoom a:hover {
     display: flex;
     justify-content: space-between;
     margin-bottom: 0.8rem;
-    font-size: 1.25rem;
+    font-size: 1.05rem;
 }
 
 .summary-item span {
