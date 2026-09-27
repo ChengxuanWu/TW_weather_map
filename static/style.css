@@ -376,6 +376,7 @@ body.dark-mode .leaflet-control-zoom a:hover {
     z-index: 1000;
     display: flex;
     flex-direction: column;
+    zoom: 0.9;
 }
 
 .summary-title {
