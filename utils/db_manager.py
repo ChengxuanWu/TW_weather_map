@@ -3,6 +3,8 @@ Database Manager Module (utils/db_manager.py)
 Handles SQLite database creation, schema design, and CRUD operations for weather forecast data.
 """
 
+import os
+import shutil
 import sqlite3
 import pandas as pd
 from typing import List, Dict, Any, Optional
@@ -15,7 +17,16 @@ class DBManager:
 
     def __init__(self, db_path: str = DEFAULT_DB_PATH):
         """Initialize database manager with specified SQLite database file path."""
-        self.db_path = db_path
+        # Vercel Serverless Functions have a read-only filesystem except for /tmp.
+        # We must copy the SQLite DB to /tmp to allow journal creation and writes.
+        if os.environ.get("VERCEL") == "1":
+            tmp_db = os.path.join("/tmp", os.path.basename(db_path))
+            if not os.path.exists(tmp_db) and os.path.exists(db_path):
+                shutil.copy2(db_path, tmp_db)
+            self.db_path = tmp_db
+        else:
+            self.db_path = db_path
+            
         self.init_db()
 
     def get_connection(self) -> sqlite3.Connection:
