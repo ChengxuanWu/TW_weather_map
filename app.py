@@ -380,28 +380,37 @@ def load_aqi_data() -> pd.DataFrame:
     return df
 
 
+import concurrent.futures
+
 def trigger_api_sync() -> bool:
     """Trigger real-time fetch from CWA API for both F-C0032-001 and O-A0003-001."""
     try:
         client = CWAApiClient()
         db = DBManager(db_path=DEFAULT_DB_PATH)
+        moenv_client = MOENVApiClient()
+        
+        def fetch_fcst():
+            return client.parse_temperature_forecast_36h(client.fetch_dataset("F-C0032-001"))
+            
+        def fetch_stn():
+            return client.parse_station_observations(client.fetch_dataset("O-A0003-001"))
+            
+        def fetch_aqi():
+            return moenv_client.parse_aqi_observations(moenv_client.fetch_dataset("aqx_p_432"))
+            
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            fut_fcst = executor.submit(fetch_fcst)
+            fut_stn = executor.submit(fetch_stn)
+            fut_aqi = executor.submit(fetch_aqi)
+            
+            forecast_records = fut_fcst.result()
+            station_records = fut_stn.result()
+            aqi_records = fut_aqi.result()
 
-        # 1. Fetch 36h Regional Forecast (F-C0032-001)
-        raw_forecast = client.fetch_dataset("F-C0032-001")
-        forecast_records = client.parse_temperature_forecast_36h(raw_forecast)
         if forecast_records:
             db.save_temperature_forecasts(forecast_records)
-
-        # 2. Fetch Real-time Station Observations (O-A0003-001)
-        raw_stations = client.fetch_dataset("O-A0003-001")
-        station_records = client.parse_station_observations(raw_stations)
         if station_records:
             db.save_station_observations(station_records)
-
-        # 3. Fetch Real-time AQI Observations (AQX_P_432)
-        moenv_client = MOENVApiClient()
-        raw_aqi = moenv_client.fetch_dataset("aqx_p_432")
-        aqi_records = moenv_client.parse_aqi_observations(raw_aqi)
         if aqi_records:
             db.save_aqi_observations(aqi_records)
 

@@ -15,31 +15,11 @@ app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+import concurrent.futures
+
 @app.post("/api/sync")
-def sync_data():
-    try:
-        client = CWAApiClient()
-        db = DBManager(db_path=DEFAULT_DB_PATH)
-
-        raw_forecast = client.fetch_dataset("F-C0032-001")
-        forecast_records = client.parse_temperature_forecast_36h(raw_forecast)
-        if forecast_records:
-            db.save_temperature_forecasts(forecast_records)
-
-        raw_stations = client.fetch_dataset("O-A0003-001")
-        station_records = client.parse_station_observations(raw_stations)
-        if station_records:
-            db.save_station_observations(station_records)
-
-        moenv_client = MOENVApiClient()
-        raw_aqi = moenv_client.fetch_dataset("aqx_p_432")
-        aqi_records = moenv_client.parse_aqi_observations(raw_aqi)
-        if aqi_records:
-            db.save_aqi_observations(aqi_records)
-            
-        return {"status": "success"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+def sync_data_post():
+    return do_sync_data()
 
 DEFAULT_DB_PATH = "data.db"
 
@@ -57,6 +37,22 @@ def get_geojson():
 def get_forecast():
     db = DBManager(db_path=DEFAULT_DB_PATH)
     df = db.get_all_temperature_forecasts()
+    
+    need_sync = False
+    if df.empty:
+        need_sync = True
+    else:
+        try:
+            last_update = pd.to_datetime(df['updatedAt'].iloc[0]).tz_localize('UTC')
+            if (pd.Timestamp.utcnow() - last_update).total_seconds() > 1800:
+                need_sync = True
+        except Exception:
+            pass
+            
+    if need_sync:
+        do_sync_data()
+        df = db.get_all_temperature_forecasts()
+        
     if df.empty:
         return []
     df["minT"] = pd.to_numeric(df["minT"], errors="coerce")
@@ -89,27 +85,37 @@ def get_aqi():
     return json.loads(df.to_json(orient="records"))
 
 @app.get("/api/sync")
-def sync_data():
+def sync_data_get():
+    return do_sync_data()
+
+def do_sync_data():
     try:
         db = DBManager(db_path=DEFAULT_DB_PATH)
         cwa_client = CWAApiClient()
+        moenv_client = MOENVApiClient()
         
-        # 1. Fetch Forecast (F-C0032-001)
-        raw_forecast = cwa_client.fetch_dataset("F-C0032-001")
-        forecast_records = cwa_client.parse_temperature_forecast(raw_forecast)
+        def fetch_fcst():
+            return cwa_client.parse_temperature_forecast_36h(cwa_client.fetch_dataset("F-C0032-001"))
+            
+        def fetch_stn():
+            return cwa_client.parse_station_observations(cwa_client.fetch_dataset("O-A0003-001"))
+            
+        def fetch_aqi():
+            return moenv_client.parse_aqi_observations(moenv_client.fetch_dataset("aqx_p_432"))
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            fut_fcst = executor.submit(fetch_fcst)
+            fut_stn = executor.submit(fetch_stn)
+            fut_aqi = executor.submit(fetch_aqi)
+            
+            forecast_records = fut_fcst.result()
+            station_records = fut_stn.result()
+            aqi_records = fut_aqi.result()
+            
         if forecast_records:
             db.save_temperature_forecasts(forecast_records)
-            
-        # 2. Fetch Station Obs (O-A0003-001)
-        raw_stations = cwa_client.fetch_dataset("O-A0003-001")
-        station_records = cwa_client.parse_station_observations(raw_stations)
         if station_records:
             db.save_station_observations(station_records)
-
-        # 3. Fetch AQI
-        moenv_client = MOENVApiClient()
-        raw_aqi = moenv_client.fetch_dataset("aqx_p_432")
-        aqi_records = moenv_client.parse_aqi_observations(raw_aqi)
         if aqi_records:
             db.save_aqi_observations(aqi_records)
             
