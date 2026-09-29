@@ -550,25 +550,7 @@ body.dark-mode .popup-row.main-metric {
    Responsive Web Design (RWD) Overrides
    ======================================================== */
 
-@media screen and (min-width: 1920px) {
-    /* 4K / Ultra-wide monitors scaling */
-    .glass-panel { zoom: 1.5 !important; }
-    .control-switcher { zoom: 1.5 !important; }
-    .title-panel { zoom: 1.8 !important; }
-    .leaflet-control-zoom { transform: scale(1.5); }
-    #region-panel { width: 450px; }
-    #summary-panel { width: 380px; }
-}
 
-@media screen and (min-width: 2500px) {
-    /* Massive displays */
-    .glass-panel { zoom: 2 !important; }
-    .control-switcher { zoom: 1.6 !important; min-width: 600px; }
-    .title-panel { zoom: 2.4 !important; }
-    .leaflet-control-zoom { transform: scale(2.4); }
-    #region-panel { width: 480px; }
-    #summary-panel { width: 420px; }
-}
 
 @media screen and (max-width: 1200px) {
     /* Tablet screens (iPad) */
